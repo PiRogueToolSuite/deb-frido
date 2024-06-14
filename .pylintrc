@@ -1,0 +1,6 @@
+[FORMAT]
+# The default 80 limit is a tad hard:
+max-line-length=100
+
+[MASTER]
+disable=unspecified-encoding,raise-missing-from,broad-exception-caught

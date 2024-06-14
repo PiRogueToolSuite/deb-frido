@@ -1,0 +1,24 @@
+---
+git:
+  work_dir: ~/deb-frida
+  upstream_remote: github
+  upstream_tags: ^[0-9.]+$
+  debian_remote: origin
+  debian_branch: debian/bookworm
+  debian_tags: ^debian/(.+)_pirogue\d+$
+  debian_auto_branch: auto/debian/bookworm
+  debian_auto_tag_format: auto/debian/%(version)s
+  debian_suffix: ~pirogue1
+builds:
+  - arch: amd64
+    wrapper: null
+  - arch: arm64
+    wrapper: schroot -c bookworm-arm64-devel
+ppa:
+  work_dir: ~/ppa-frida
+  suite: frida-bookworm
+  signing_key: '0xC72EE83EDF59D743EA0D4DD13494A52D59CD510A'
+  publish_url: https://pirogue.apt.debamax.com/
+  publish_wrapper: rsync -av . website:pirogue.apt.debamax.com
+discord:
+  webhook_url_file: ~/.config/frido/discord_webhook_url
