@@ -36,6 +36,7 @@ STEPS = [
     'prepare',
     'patch',
     'build',
+    'debdiff',
     'publish',
     'push',
 ]
@@ -88,7 +89,7 @@ def detect():
     STATE_FILE.write_text(yaml.dump(state, sort_keys=False))
 
 
-def process_one(version: str):
+def process_one(version: str, reference_debs: dict):
     """
     Run every step for the specified version.
     """
@@ -193,6 +194,45 @@ def process_one(version: str):
                 print(ex)
                 status += f'❌ {build.arch}'
 
+        elif step == 'debdiff':
+            # We have a list of files to publish, some of them .deb, which we
+            # want to check against reference files to generate diffs.
+            try:
+                debdiff_files = []
+                for publish_file in publish_queue:
+                    if not publish_file.endswith('.deb'):
+                        continue
+
+                    arch = None
+                    arch_match = re.match(r'.*_(.+?)\.deb', publish_file)
+                    if not arch_match:
+                        logging.error('unable to determine architecture for %s', publish_file)
+                        sys.exit(1)
+                    arch = arch_match.group(1)
+                    logging.debug('determined architecture %s from filename %s', arch, publish_file)
+
+                    reference_path = KC.reference.work_dir.expanduser() / reference_debs[arch]
+                    debdiff_run = subprocess.run(['debdiff', reference_path, f'../{publish_file}'],
+                                                 capture_output=True)
+                    if debdiff_run.returncode not in [0, 1]:
+                        raise RuntimeError(f'unexpected returncode for debdiff ({debdiff_run.returncode})')
+                    debdiff_path = Path('..') / re.sub(r'\.deb', '.debdiff.txt', publish_file)
+                    debdiff_path.write_bytes(debdiff_run.stdout)
+                    debdiff_files.append(debdiff_path.name)
+                    status += f'✅ {arch}\n'
+            except BaseException as ex:
+                print(ex)
+                status += f'❌ {arch}'
+
+            # FIXME: It is a bit silly to have an extra step instead of
+            # extending the publish_queue directly.
+            try:
+                publish_queue.extend(debdiff_files)
+                status += f'✅ queue\n'
+            except BaseException as ex:
+                print(ex)
+                status += f'❌ queue'
+
         elif step == 'publish':
             # Phase 1: Import from the publish queue, warning for each file that
             # already exists with different contents.
@@ -201,7 +241,7 @@ def process_one(version: str):
             try:
                 suite_path = KC.ppa.work_dir.expanduser() / KC.ppa.suite
                 suite_path.mkdir(parents=True, exist_ok=True)
-                for publish_file in publish_queue:
+                for publish_file in sorted(publish_queue):
                     src_file = Path('..') / publish_file
                     dst_file = suite_path / publish_file
                     icon = '✅'
@@ -326,7 +366,8 @@ def notify(version: str, result: dict):
                 emoji = line[0]
                 details = line[2:]
                 # And we might adjust details:
-                if step == 'publish' and details.endswith('.deb'):
+                # FIXME: rethink the condition!
+                if step == 'publish' and (details.endswith('.deb') or details.endswith('.debdiff.txt')):
                     # Direct download link to packages:
                     details = f'[`{details}`]({KC.ppa.publish_url}{KC.ppa.suite}/{details})'
                 message.append(f'{emoji} {step}: {details}')
@@ -366,6 +407,11 @@ def process():
     #  - matches a tag for the last package? might not be true if extra work was done
     #  - some git branch should be set?
 
+    # We need reference files:
+    if 'reference-debs' not in state:
+        logging.error('please run --reference first, we need reference files to debdiff against')
+        sys.exit(1)
+
     for version in state['todo']:
         # If we've seen this version already, either skip or stop:
         if version in state['results']:
@@ -378,7 +424,7 @@ def process():
 
         # Otherwise: process, save results, notify, and maybe continue:
         logging.info('processing %s', version)
-        result = process_one(version)
+        result = process_one(version, state['reference-debs'])
         state['results'][version] = result
         STATE_FILE.write_text(yaml.dump(state, sort_keys=False))
         notify(version, result)
