@@ -175,11 +175,11 @@ def process_one(version: str, reference_debs: dict):
                                                               *dpkg_genchanges_options],
                                                              stderr=subprocess.DEVNULL)
                     changes = Deb822(output_changes.decode())
-                    # TODO: To publish the build log, we could pick the
-                    # .buildinfo path and remove 'info' at the very end.
-                    files = [line.split(' ')[-1]
+                    # Trick: to publish the build log, we pick the .buildinfo
+                    # path and remove 'info' at the very end:
+                    files = [re.sub(r'\.buildinfo$', '.build', line.split(' ')[-1])
                              for line in changes['Files'].splitlines()
-                             if line.endswith('.deb')]
+                             if line.endswith('.deb') or line.endswith('.buildinfo')]
                     publish_queue.extend(files)
                     status += f'✅ {build.arch}\n'
             except subprocess.CalledProcessError as ex:
@@ -367,7 +367,7 @@ def notify(version: str, result: dict):
                 details = line[2:]
                 # And we might adjust details:
                 # FIXME: rethink the condition!
-                if step == 'publish' and (details.endswith('.deb') or details.endswith('.debdiff.txt')):
+                if step == 'publish' and (details.endswith('.deb') or details.endswith('.debdiff.txt') or details.endswith('.build')):
                     # Direct download link to packages:
                     details = f'[`{details}`]({KC.ppa.publish_url}{KC.ppa.suite}/{details})'
                 message.append(f'{emoji} {step}: {details}')
