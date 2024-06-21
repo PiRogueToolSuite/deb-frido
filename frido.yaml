@@ -22,3 +22,6 @@ ppa:
   publish_wrapper: rsync -av . website:pirogue.apt.debamax.com
 discord:
   webhook_url_file: ~/.config/frido/discord_webhook_url
+reference:
+  work_dir: ~/reference-frida
+  pts_ppa_url: https://pts-project.org/debian-12/pirogue-3rd-party

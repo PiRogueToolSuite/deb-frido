@@ -40,11 +40,17 @@ class FridoConfigDiscord(BaseModel):
     webhook_url_file: Path
 
 
+class FridoConfigReference(BaseModel):
+    work_dir: Path
+    pts_ppa_url: str
+
+
 class FridoConfig(BaseModel):
     git: FridoConfigGit
     builds: List[FridoConfigBuild]
     ppa: FridoConfigPpa
     discord: FridoConfigDiscord
+    reference: FridoConfigReference
 
 
 def load_config(config_file) -> FridoConfig:
