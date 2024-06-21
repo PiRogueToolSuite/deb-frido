@@ -355,6 +355,7 @@ def notify(version: str, result: dict):
     else:
         message.append(f'**Failed automatic packaging: {version}**')
 
+    ppa_suite_path = KC.ppa.work_dir.expanduser() / KC.ppa.suite
     for step, status in result['steps'].items():
         # DRY: some steps only have an emoji, some others have details.
         # Compensate in the former case.
@@ -366,9 +367,12 @@ def notify(version: str, result: dict):
                 emoji = line[0]
                 details = line[2:]
                 # And we might adjust details:
-                # FIXME: rethink the condition!
-                if step == 'publish' and (details.endswith('.deb') or details.endswith('.debdiff.txt') or details.endswith('.build')):
-                    # Direct download link to packages:
+                #  - for now, add a download link of that's a file in the
+                #    suite's directory;
+                #  - later, we might want lines with 3 links like this:
+                #    [frida_<version>_<arch>.deb] [build log] [debdiff against <reference_version>]
+                if step == 'publish' and (ppa_suite_path / details).exists():
+                    # Direct download link to packages, debdiffs, build logs, etc.:
                     details = f'[`{details}`]({KC.ppa.publish_url}{KC.ppa.suite}/{details})'
                 message.append(f'{emoji} {step}: {details}')
 
