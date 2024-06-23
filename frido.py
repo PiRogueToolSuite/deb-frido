@@ -22,6 +22,7 @@ from packaging.version import Version
 import frido.config
 import frido.state
 from frido.actions import run_actions
+from frido.git import refresh_git
 from frido.reference import refresh_reference
 
 
@@ -40,53 +41,6 @@ STEPS = [
     'publish',
     'push',
 ]
-
-
-def detect():
-    """
-    Check git repository: upstream vs. debian packaging.
-
-    The state file gets updated accordingly:
-     - last-package is the last upstream version with an official debian
-       package.
-       FIXME: we should probably keep track of the upstream version and of
-       the debian revision, to access the debian packages.
-     - todo is the list of upstream versions since that package.
-     - results is left untouched, as that one is about the steps that have
-       been performed in the past.
-    """
-    # Initial values, if the file doesn't exist yet:
-    state = {
-        'last-package': None,
-        'todo': [],
-        'results': {},
-    }
-    if STATE_FILE.exists():
-        state = yaml.safe_load(STATE_FILE.read_text())
-
-    # Sync and detect tags:
-    os.chdir(FC.git.work_dir.expanduser())
-    subprocess.check_call(['git', 'fetch', FC.git.upstream_remote])
-    tags = subprocess.check_output(['git', 'tag', '-l']).decode().splitlines()
-
-    # Compute needed work:
-    upstream_tags = [tag
-                     for tag in tags
-                     if re.match(FC.git.upstream_tags, tag)]
-    upstream_tags.sort(key=Version)
-    debian_tags = [version_match.group(1)
-                   for tag in tags
-                   if (version_match := re.match(FC.git.debian_tags, tag))]
-    debian_tags.sort(key=Version)
-
-    last_package = debian_tags[-1]
-    todo = [tag for tag in upstream_tags if Version(tag) > Version(last_package)]
-    todo.sort(key=Version)
-
-    # Save state:
-    state['last-package'] = last_package
-    state['todo'] = todo
-    STATE_FILE.write_text(yaml.dump(state, sort_keys=False))
 
 
 def process_one(version: str, reference: dict):
@@ -444,7 +398,7 @@ def process():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     parser = argparse.ArgumentParser(description='Frida auto-packager')
-    parser.add_argument('--detect', action='store_true')
+    parser.add_argument('--refresh-git', action='store_true')
     parser.add_argument('--refresh-reference', action='store_true')
     parser.add_argument('--process', action='store_true')
     parser.add_argument('--cheat', action='store_true')
@@ -455,8 +409,8 @@ if __name__ == '__main__':
     FC = frido.config.init(CONFIG_FILE)
     FS = frido.state.init(STATE_FILE)
 
-    if args.detect:
-        detect()
+    if args.refresh_git:
+        refresh_git(FC, FS)
     if args.refresh_reference:
         refresh_reference(FC, FS)
     if args.process:
