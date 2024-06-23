@@ -449,7 +449,7 @@ def reference():
     packages_path = KC.reference.work_dir.expanduser() / 'Packages'
     packages_path.parent.mkdir(parents=True, exist_ok=True)
 
-    reply = requests.get(f'{KC.reference.pts_ppa_url}/Packages')
+    reply = requests.get(f'{KC.reference.pts_ppa_url}/Packages', timeout=30)
     reply.raise_for_status()
     packages_path.write_bytes(reply.content)
 
