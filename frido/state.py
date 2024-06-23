@@ -40,7 +40,9 @@ def init(state_path: Path) -> FridoState:
     else:
         state_content = state_path.read_text()
 
-    FridoState.register_path(state_path)
+    # Sync-ing the state can happen from various places, so let's resolve the
+    # path before registering it:
+    FridoState.register_path(state_path.resolve())
     obj = yaml.safe_load(state_content)
     return FridoState(**obj)
 
