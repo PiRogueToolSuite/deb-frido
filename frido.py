@@ -9,7 +9,7 @@ from pathlib import Path
 
 import frido.config
 import frido.state
-from frido.builds import process
+from frido.builds import build_all
 from frido.git import refresh_git
 from frido.reference import refresh_reference
 
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Frida auto-packager')
     parser.add_argument('--refresh-git', action='store_true')
     parser.add_argument('--refresh-reference', action='store_true')
-    parser.add_argument('--process', action='store_true')
+    parser.add_argument('--build', action='store_true')
     parser.add_argument('--cheat', action='store_true')
     parser.add_argument('--only-one', action='store_true')
     parser.add_argument('--no-notify', action='store_true')
@@ -37,5 +37,5 @@ if __name__ == '__main__':
         refresh_git(FC, FS, args)
     if args.refresh_reference:
         refresh_reference(FC, FS, args)
-    if args.process:
-        process(FC, FS, args)
+    if args.build:
+        build_all(FC, FS, args)

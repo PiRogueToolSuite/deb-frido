@@ -60,7 +60,7 @@ def check_overall_consistency(fc: FridoConfig, fs: FridoState):
     Ensure everything is consistent (git and reference), and ready to perform
     builds (which operates in the git checkout in an automated fashion).
     """
-    # Since --refresh* can be called independently from --process, check git
+    # Since --refresh* can be called independently from --build, check git
     # consistency (again):
     check_git_consistency(fc, fs)
 

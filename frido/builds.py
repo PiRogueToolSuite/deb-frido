@@ -37,7 +37,7 @@ STEPS = [
 ]
 
 
-def process_one(fc: FridoConfig, fs: FridoState,
+def build_one(fc: FridoConfig, fs: FridoState,
                 args: argparse.Namespace, version: str) -> FridoStateResult:
     """
     Run every step for the specified version.
@@ -293,9 +293,9 @@ def process_one(fc: FridoConfig, fs: FridoState,
     return result
 
 
-def process(fc: FridoConfig, fs: FridoState, args: argparse.Namespace):
+def build_all(fc: FridoConfig, fs: FridoState, args: argparse.Namespace):
     """
-    Iterate over the todo list.
+    Iterate over the todo list, building as requested.
 
     For each version in the todo list, we might have results. If operations were
     successful, skip the version, otherwise stop immediately: some human brain
@@ -318,8 +318,8 @@ def process(fc: FridoConfig, fs: FridoState, args: argparse.Namespace):
             sys.exit(1)
 
         # Otherwise: process, notify, and maybe continue:
-        logging.info('processing %s', version)
-        result = process_one(fc, fs, args, version)
+        logging.info('building %s', version)
+        result = build_one(fc, fs, args, version)
 
         if args.no_notify:
             logging.debug('skipping notification as requested')
@@ -331,5 +331,5 @@ def process(fc: FridoConfig, fs: FridoState, args: argparse.Namespace):
             sys.exit(1)
 
         if args.only_one:
-            logging.debug('processing only one version as requested, stopping')
+            logging.debug('building only one version as requested, stopping')
             sys.exit(0)
