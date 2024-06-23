@@ -59,15 +59,13 @@ def sync_reference(fc: FridoConfig, state_file: Path):
 
     # Extract stanzas for the last version of frida:
     archs = [build.arch for build in fc.builds]
-    frida_stanzas = {arch: None for arch in archs}
+    frida_stanzas = {arch: Deb822('Version: 0') for arch in archs}
     for stanza in Deb822.iter_paragraphs(packages_path.read_text()):
         if stanza['Package'] != 'frida':
             continue
 
         arch = stanza['Architecture']
-        if not frida_stanzas[arch]:
-            frida_stanzas[arch] = stanza
-        elif DebianVersion(stanza['Version']) > DebianVersion(frida_stanzas[arch]['Version']):
+        if DebianVersion(stanza['Version']) > DebianVersion(frida_stanzas[arch]['Version']):
             frida_stanzas[arch] = stanza
 
     # Consistency check:
@@ -78,7 +76,7 @@ def sync_reference(fc: FridoConfig, state_file: Path):
 
     reference_debs = {}
     for arch, stanza in frida_stanzas.items():
-        if not stanza:
+        if stanza['Version'] == '0':
             logging.error('no frida stanza for architecture %s', arch)
             sys.exit(1)
 
