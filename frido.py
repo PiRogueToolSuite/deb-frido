@@ -19,13 +19,15 @@ import yaml
 from debian.deb822 import Deb822
 from packaging.version import Version
 
+import frido.config
+import frido.state
 from frido.actions import run_actions
-from frido.config import load_config
 from frido.reference import sync_reference
 
 
 # Resolve the path directly so that we don't have to keep track of the current
 # working directory:
+CONFIG_FILE = Path('frido.yaml').resolve()
 STATE_FILE = Path('state.yaml').resolve()
 
 # Successive steps for each version. Some of them only return an OK/KO status
@@ -452,11 +454,12 @@ if __name__ == '__main__':
     parser.add_argument('--no-notify', action='store_true')
     args = parser.parse_args()
 
-    FC = load_config('frido.yaml')
+    FC = frido.config.init(CONFIG_FILE)
+    FS = frido.state.init(STATE_FILE)
 
     if args.detect:
         detect()
     if args.reference:
-        sync_reference(FC, STATE_FILE)
+        sync_reference(FC, FS)
     if args.process:
         process()

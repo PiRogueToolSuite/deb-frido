@@ -1,5 +1,5 @@
 """
-Reference mangement.
+Reference management.
 """
 
 import hashlib
@@ -8,12 +8,12 @@ import sys
 from pathlib import Path
 
 import requests
-import yaml
 
 from debian.deb822 import Deb822
 from debian.debian_support import Version as DebianVersion
 
 from .config import FridoConfig
+from .state import FridoState
 
 
 def download_deb(deb_url: str, deb_path: Path, size: int, sha256: str):
@@ -45,7 +45,7 @@ def download_deb(deb_url: str, deb_path: Path, size: int, sha256: str):
             sys.exit(1)
 
 
-def sync_reference(fc: FridoConfig, state_file: Path):
+def sync_reference(fc: FridoConfig, fs: FridoState):
     """
     Check the state of the PTS PPA, and make sure reference files are
     present (to diff against).
@@ -89,11 +89,6 @@ def sync_reference(fc: FridoConfig, state_file: Path):
         reference_debs[arch] = stanza['Filename']
 
     # Remember the reference files:
-    state = {}
-    if state_file.exists():
-        state = yaml.safe_load(state_file.read_text())
-    state['reference'] = {
-        'version': frida_versions[0],
-        'debs': reference_debs,
-    }
-    state_file.write_text(yaml.dump(state, sort_keys=False))
+    fs.reference.version = frida_versions[0]
+    fs.reference.debs = reference_debs
+    fs.sync()
