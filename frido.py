@@ -495,7 +495,7 @@ def sync_reference():
                 download = True
 
         if download:
-            reply = requests.get(f'{KC.reference.pts_ppa_url}/{stanza["Filename"]}') # XXX
+            reply = requests.get(f'{KC.reference.pts_ppa_url}/{stanza["Filename"]}', timeout=30)
             reply.raise_for_status()
             deb_path.write_bytes(reply.content)
 
