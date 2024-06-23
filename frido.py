@@ -21,6 +21,7 @@ STATE_FILE = Path('state.yaml')
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     parser = argparse.ArgumentParser(description='Frida auto-packager')
+    parser.add_argument('--refresh', action='store_true')
     parser.add_argument('--refresh-git', action='store_true')
     parser.add_argument('--refresh-reference', action='store_true')
     parser.add_argument('--build', action='store_true')
@@ -29,6 +30,10 @@ if __name__ == '__main__':
     parser.add_argument('--no-notify', action='store_true')
     parser.add_argument('--no-fetch', action='store_true')
     args = parser.parse_args()
+
+    # We have 3 options for granularity:
+    if args.refresh:
+        args.refresh_git = args.refresh_reference = True
 
     FC = frido.config.init(CONFIG_FILE)
     FS = frido.state.init(STATE_FILE)
