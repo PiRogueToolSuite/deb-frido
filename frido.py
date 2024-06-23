@@ -27,7 +27,7 @@ from frido.reference import sync_reference
 
 # Resolve the path directly so that we don't have to keep track of the current
 # working directory:
-CONFIG_FILE = Path('frido.yaml').resolve()
+CONFIG_FILE = Path('config.yaml').resolve()
 STATE_FILE = Path('state.yaml').resolve()
 
 # Successive steps for each version. Some of them only return an OK/KO status
