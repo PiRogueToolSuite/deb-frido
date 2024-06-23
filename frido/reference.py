@@ -88,7 +88,7 @@ def refresh_reference(fc: FridoConfig, fs: FridoState):
 
         reference_debs[arch] = stanza['Filename']
 
-    # Remember the reference files:
+    # Sync to disk:
     fs.reference.version = frida_versions[0]
     fs.reference.debs = reference_debs
     fs.sync()
