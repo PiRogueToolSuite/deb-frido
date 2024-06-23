@@ -22,7 +22,7 @@ from packaging.version import Version
 import frido.config
 import frido.state
 from frido.actions import run_actions
-from frido.reference import sync_reference
+from frido.reference import refresh_reference
 
 
 CONFIG_FILE = Path('config.yaml')
@@ -445,7 +445,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     parser = argparse.ArgumentParser(description='Frida auto-packager')
     parser.add_argument('--detect', action='store_true')
-    parser.add_argument('--reference', action='store_true')
+    parser.add_argument('--refresh-reference', action='store_true')
     parser.add_argument('--process', action='store_true')
     parser.add_argument('--cheat', action='store_true')
     parser.add_argument('--only-one', action='store_true')
@@ -457,7 +457,7 @@ if __name__ == '__main__':
 
     if args.detect:
         detect()
-    if args.reference:
-        sync_reference(FC, FS)
+    if args.refresh_reference:
+        refresh_reference(FC, FS)
     if args.process:
         process()

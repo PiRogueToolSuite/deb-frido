@@ -45,7 +45,7 @@ def download_deb(deb_url: str, deb_path: Path, size: int, sha256: str):
             sys.exit(1)
 
 
-def sync_reference(fc: FridoConfig, fs: FridoState):
+def refresh_reference(fc: FridoConfig, fs: FridoState):
     """
     Check the state of the PTS PPA, and make sure reference files are
     present (to diff against).
