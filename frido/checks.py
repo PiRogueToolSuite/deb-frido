@@ -51,3 +51,19 @@ def check_git_consistency(fc: FridoConfig, _fs: FridoState):
         logging.debug('remote branch %s is ahead, fast-forwarding', fc.git.debian_remote)
         # --ff-only to be extra sure, as merge-base calls earlier should ensure success:
         check_call(['git', 'merge', '--ff-only', f'{fc.git.debian_remote}/{fc.git.debian_branch}'])
+
+
+def check_overall_consistency(fc: FridoConfig, fs: FridoState):
+    """
+    Ensure everything is consistent (git and reference), and ready to perform
+    builds (which operates in the git checkout in an automated fashion).
+    """
+    # Since --refresh* can be called independently from --process, check git
+    # consistency (again):
+    check_git_consistency(fc, fs)
+
+    # Official things must match!
+    if fs.git.debian.dversion != fs.reference.version:
+        logging.error('inconsistent versions: %s (git) vs. %s (reference)',
+                      fs.git.debian.dversion, fs.reference.version)
+        sys.exit(1)
