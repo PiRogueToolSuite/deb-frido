@@ -3,6 +3,7 @@ Checks management.
 """
 
 import logging
+import os
 import sys
 from subprocess import check_call, check_output, run
 
@@ -14,6 +15,7 @@ def check_git_consistency(fc: FridoConfig, _fs: FridoState):
     """
     Detect dangerous situations, erroring out if needed.
     """
+    os.chdir(fc.git.work_dir.expanduser())
     # Having WIP-oriented branches locally might be needed when fixing build
     # failures, but let's make sure we don't autobuild anything from a branch
     # that's not the configured one:
@@ -61,6 +63,14 @@ def check_overall_consistency(fc: FridoConfig, fs: FridoState):
     # Since --refresh* can be called independently from --process, check git
     # consistency (again):
     check_git_consistency(fc, fs)
+
+    # We must hava data!
+    if fs.git.debian.dversion is None:
+        logging.error('no information for git, please use --refresh(-git)')
+        sys.exit(1)
+    if fs.reference.version is None:
+        logging.error('no information for reference, please use --refresh(-reference)')
+        sys.exit(1)
 
     # Official things must match!
     if fs.git.debian.dversion != fs.reference.version:
