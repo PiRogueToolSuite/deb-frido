@@ -12,12 +12,37 @@ from pydantic import BaseModel
 # pylint: disable=missing-class-docstring
 
 
+class FridoStateGitDebian(BaseModel):
+    """
+    Debian is tricky:
+     - tag: debian/16.3.3_pirogue1 (git tag -l)
+     - dversion: 16.3.3~pirogue1   (debian/changelog)
+     - uversion: 16.3.3            (git tag -l + git.debian_tags config)
+    """
+    tag: Optional[str]
+    dversion: Optional[str]
+    uversion: Optional[str]
+
+
+class FridoStateGitUpstream(BaseModel):
+    """
+    Upstream is easy: tag == version.
+    """
+    tag: Optional[str]
+
+
+class FridoStateGit(BaseModel):
+    debian: FridoStateGitDebian
+    upstream: FridoStateGitUpstream
+
+
 class FridoStateReference(BaseModel):
     version: Optional[str]
     debs: dict[str, str]
 
 
 class FridoState(BaseModel):
+    git: FridoStateGit
     reference: FridoStateReference
 
     @classmethod
@@ -48,6 +73,13 @@ def init(state_path: Path) -> FridoState:
 
 
 DEFAULT_STATE_CONTENT = """---
+git:
+  debian:
+    tag: null
+    dversion: null
+    uversion: null
+  upstream:
+    tag: null
 reference:
   version: null
   debs: {}
