@@ -89,7 +89,7 @@ def detect():
     STATE_FILE.write_text(yaml.dump(state, sort_keys=False))
 
 
-def process_one(version: str, reference_debs: dict):
+def process_one(version: str, reference: dict):
     """
     Run every step for the specified version.
     """
@@ -211,7 +211,7 @@ def process_one(version: str, reference_debs: dict):
                     arch = arch_match.group(1)
                     logging.debug('determined architecture %s from filename %s', arch, publish_file)
 
-                    reference_path = KC.reference.work_dir.expanduser() / reference_debs[arch]
+                    reference_path = KC.reference.work_dir.expanduser() / reference['debs'][arch]
                     debdiff_run = subprocess.run(['debdiff', reference_path, f'../{publish_file}'],
                                                  capture_output=True)
                     if debdiff_run.returncode not in [0, 1]:
@@ -412,7 +412,7 @@ def process():
     #  - some git branch should be set?
 
     # We need reference files:
-    if 'reference-debs' not in state:
+    if 'reference' not in state:
         logging.error('please run --reference first, we need reference files to debdiff against')
         sys.exit(1)
 
@@ -428,7 +428,7 @@ def process():
 
         # Otherwise: process, save results, notify, and maybe continue:
         logging.info('processing %s', version)
-        result = process_one(version, state['reference-debs'])
+        result = process_one(version, state['reference'])
         state['results'][version] = result
         STATE_FILE.write_text(yaml.dump(state, sort_keys=False))
         notify(version, result)
@@ -441,7 +441,7 @@ def process():
             sys.exit(0)
 
 
-def reference():
+def sync_reference():
     """
     Check the state of the PTS PPA, and make sure reference files are
     present (to diff against).
@@ -468,7 +468,7 @@ def reference():
                 frida_stanzas[arch] = stanza
 
     # Consistency check:
-    frida_versions = set([stanza['Version'] for stanza in frida_stanzas.values()])
+    frida_versions = list({stanza['Version'] for stanza in frida_stanzas.values()})
     if len(frida_versions) != 1:
         logging.error('unexpected number of versions: %s', frida_versions)
         sys.exit(1)
@@ -512,7 +512,10 @@ def reference():
     state = {}
     if STATE_FILE.exists():
         state = yaml.safe_load(STATE_FILE.read_text())
-    state['reference-debs'] = reference_debs
+    state['reference'] = {
+        'version': frida_versions[0],
+        'debs': reference_debs,
+    }
     STATE_FILE.write_text(yaml.dump(state, sort_keys=False))
 
 
@@ -532,6 +535,6 @@ if __name__ == '__main__':
     if args.detect:
         detect()
     if args.reference:
-        reference()
+        sync_reference()
     if args.process:
         process()
