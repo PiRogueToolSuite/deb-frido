@@ -9,19 +9,21 @@ from subprocess import PIPE, Popen, check_call, check_output
 from debian.debian_support import Version as DVersion
 from packaging.version import Version as UVersion
 
+from .checks import check_git_consistency
 from .config import FridoConfig
 from .state import FridoState
 
 
 def refresh_git(fc: FridoConfig, fs: FridoState):
     """
-    Check the state of the git branches and tags: upstream, debian, and
-    locally.
+    Refresh from remotes and analyze the state of the git branches and tags:
+    upstream, debian, and locally.
     """
     # Sync remotes and detect tags:
     os.chdir(fc.git.work_dir.expanduser())
     check_call(['git', 'fetch', fc.git.debian_remote])
     check_call(['git', 'fetch', fc.git.upstream_remote])
+    check_git_consistency(fc, fs)
     tags = check_output(['git', 'tag', '-l']).decode().splitlines()
 
     # Extract upstream information (easy):
