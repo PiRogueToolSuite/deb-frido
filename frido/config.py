@@ -53,12 +53,12 @@ class FridoConfig(BaseModel):
     reference: FridoConfigReference
 
 
-def load_config(config_file) -> FridoConfig:
+def init(config_path: Path) -> FridoConfig:
     """
     Turn a frido configuration file into a FridoConfig object.
 
     It could probably call expanduser() on a selection of Path objects (all but
     ppa.suite, which is meant to be a subdirectory of ppa.work_dir).
     """
-    obj = yaml.safe_load(Path(config_file).read_text())
+    obj = yaml.safe_load(config_path.read_text())
     return FridoConfig(**obj)
