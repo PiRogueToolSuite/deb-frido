@@ -65,18 +65,18 @@ def detect():
         state = yaml.safe_load(STATE_FILE.read_text())
 
     # Sync and detect tags:
-    os.chdir(KC.git.work_dir.expanduser())
-    subprocess.check_call(['git', 'fetch', KC.git.upstream_remote])
+    os.chdir(FC.git.work_dir.expanduser())
+    subprocess.check_call(['git', 'fetch', FC.git.upstream_remote])
     tags = subprocess.check_output(['git', 'tag', '-l']).decode().splitlines()
 
     # Compute needed work:
     upstream_tags = [tag
                      for tag in tags
-                     if re.match(KC.git.upstream_tags, tag)]
+                     if re.match(FC.git.upstream_tags, tag)]
     upstream_tags.sort(key=Version)
     debian_tags = [version_match.group(1)
                    for tag in tags
-                   if (version_match := re.match(KC.git.debian_tags, tag))]
+                   if (version_match := re.match(FC.git.debian_tags, tag))]
     debian_tags.sort(key=Version)
 
     last_package = debian_tags[-1]
@@ -98,8 +98,8 @@ def process_one(version: str, reference: dict):
         'success': True,
     }
     publish_queue = []
-    fullversion = f'{version}{KC.git.debian_suffix}'
-    os.chdir(KC.git.work_dir.expanduser())
+    fullversion = f'{version}{FC.git.debian_suffix}'
+    os.chdir(FC.git.work_dir.expanduser())
 
     for step in STEPS:
         result['steps'][step] = '…'
@@ -132,7 +132,7 @@ def process_one(version: str, reference: dict):
             try:
                 run_actions(step, {
                     'fullversion': fullversion,
-                    'tagformat': KC.git.debian_auto_tag_format,
+                    'tagformat': FC.git.debian_auto_tag_format,
                 })
                 status = '✅'
             except BaseException:
@@ -144,7 +144,7 @@ def process_one(version: str, reference: dict):
             #
             # Design choice: the first failure is fatal.
             try:
-                for build in KC.builds:
+                for build in FC.builds:
                     # Determine the full build command. Note the -us option to
                     # avoid signing the source package, which debsign tries to
                     # do despite -b.
@@ -211,7 +211,7 @@ def process_one(version: str, reference: dict):
                     arch = arch_match.group(1)
                     logging.debug('determined architecture %s from filename %s', arch, publish_file)
 
-                    reference_path = KC.reference.work_dir.expanduser() / reference['debs'][arch]
+                    reference_path = FC.reference.work_dir.expanduser() / reference['debs'][arch]
                     debdiff_run = subprocess.run(['debdiff', reference_path, f'../{publish_file}'],
                                                  capture_output=True)
                     if debdiff_run.returncode not in [0, 1]:
@@ -239,7 +239,7 @@ def process_one(version: str, reference: dict):
             #
             # TODO: Compute and publish diff against last official version.
             try:
-                suite_path = KC.ppa.work_dir.expanduser() / KC.ppa.suite
+                suite_path = FC.ppa.work_dir.expanduser() / FC.ppa.suite
                 suite_path.mkdir(parents=True, exist_ok=True)
                 for publish_file in sorted(publish_queue):
                     src_file = Path('..') / publish_file
@@ -275,7 +275,7 @@ def process_one(version: str, reference: dict):
                 output = subprocess.check_output(['apt-ftparchive', 'release', '.'])
                 (suite_path / 'Release').write_bytes(output)
                 output = subprocess.check_output([
-                    'gpg', '--armor', '--local-user', KC.ppa.signing_key,
+                    'gpg', '--armor', '--local-user', FC.ppa.signing_key,
                     '--detach-sign', '--output', 'Release.gpg', 'Release',
                 ])
 
@@ -285,7 +285,7 @@ def process_one(version: str, reference: dict):
                 signing_key = 'signing-key.asc'
                 output = subprocess.check_output([
                     'gpg', '--armor',
-                    '--export', '--output', signing_key, KC.ppa.signing_key,
+                    '--export', '--output', signing_key, FC.ppa.signing_key,
                 ])
                 packets = subprocess.check_output(['gpg', '--list-packets', signing_key])
                 for line in packets.decode().splitlines():
@@ -296,9 +296,9 @@ def process_one(version: str, reference: dict):
 
                 # Switch to the ppa directory for final publish operation (if
                 # any), then back to the old current working directory:
-                if KC.ppa.publish_wrapper:
-                    os.chdir(KC.ppa.work_dir.expanduser())
-                    output = subprocess.check_output(shlex.split(KC.ppa.publish_wrapper))
+                if FC.ppa.publish_wrapper:
+                    os.chdir(FC.ppa.work_dir.expanduser())
+                    output = subprocess.check_output(shlex.split(FC.ppa.publish_wrapper))
                 os.chdir(cwd)
                 status += '✅ repository'
             except BaseException as ex:
@@ -319,8 +319,8 @@ def process_one(version: str, reference: dict):
                 # tags, we're pushing with -f and overwriting without any kind
                 # of second thought!
                 run_actions(step, {
-                    'remote': KC.git.debian_remote,
-                    'branch': KC.git.debian_auto_branch,
+                    'remote': FC.git.debian_remote,
+                    'branch': FC.git.debian_auto_branch,
                     'tag': tag,
                 })
                 status = '✅'
@@ -355,7 +355,7 @@ def notify(version: str, result: dict):
     else:
         message.append(f'**Failed automatic packaging: {version}**')
 
-    ppa_suite_path = KC.ppa.work_dir.expanduser() / KC.ppa.suite
+    ppa_suite_path = FC.ppa.work_dir.expanduser() / FC.ppa.suite
     for step, status in result['steps'].items():
         # DRY: some steps only have an emoji, some others have details.
         # Compensate in the former case.
@@ -373,13 +373,13 @@ def notify(version: str, result: dict):
                 #    [frida_<version>_<arch>.deb] [build log] [debdiff against <reference_version>]
                 if step == 'publish' and (ppa_suite_path / details).exists():
                     # Direct download link to packages, debdiffs, build logs, etc.:
-                    details = f'[`{details}`]({KC.ppa.publish_url}{KC.ppa.suite}/{details})'
+                    details = f'[`{details}`]({FC.ppa.publish_url}{FC.ppa.suite}/{details})'
                 message.append(f'{emoji} {step}: {details}')
 
     # The file indirection means we can keep the config file under revision
     # control without leaking the actual webhook URL:
     try:
-        webhook_url = KC.discord.webhook_url_file.expanduser().read_text().strip()
+        webhook_url = FC.discord.webhook_url_file.expanduser().read_text().strip()
         # As of 2024, 204 (No content) is documented as the status code for
         # successful webhook usage, but let's be flexible:
         reply = requests.post(webhook_url,
@@ -475,15 +475,15 @@ def sync_reference():
     Check the state of the PTS PPA, and make sure reference files are
     present (to diff against).
     """
-    packages_path = KC.reference.work_dir.expanduser() / 'Packages'
+    packages_path = FC.reference.work_dir.expanduser() / 'Packages'
     packages_path.parent.mkdir(parents=True, exist_ok=True)
 
-    reply = requests.get(f'{KC.reference.pts_ppa_url}/Packages', timeout=30)
+    reply = requests.get(f'{FC.reference.pts_ppa_url}/Packages', timeout=30)
     reply.raise_for_status()
     packages_path.write_bytes(reply.content)
 
     # Extract stanzas for the last version of frida:
-    archs = [build.arch for build in KC.builds]
+    archs = [build.arch for build in FC.builds]
     frida_stanzas = {arch: None for arch in archs}
     for stanza in Deb822.iter_paragraphs(packages_path.read_text()):
         if stanza['Package'] != 'frida':
@@ -508,9 +508,9 @@ def sync_reference():
             sys.exit(1)
 
         # Make sure any intermediate subdirectory is created if needed:
-        deb_path = KC.reference.work_dir.expanduser() / stanza['Filename']
+        deb_path = FC.reference.work_dir.expanduser() / stanza['Filename']
         deb_path.parent.mkdir(parents=True, exist_ok=True)
-        download_deb(f'{KC.reference.pts_ppa_url}/{stanza["Filename"]}', deb_path,
+        download_deb(f'{FC.reference.pts_ppa_url}/{stanza["Filename"]}', deb_path,
                      stanza['Size'], stanza['SHA256'])
 
         reference_debs[arch] = stanza['Filename']
@@ -537,7 +537,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-notify', action='store_true')
     args = parser.parse_args()
 
-    KC = load_config('frido.yaml')
+    FC = load_config('frido.yaml')
 
     if args.detect:
         detect()
