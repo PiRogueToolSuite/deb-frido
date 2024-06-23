@@ -3,7 +3,7 @@ State management
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
 import yaml
 from pydantic import BaseModel
@@ -41,9 +41,16 @@ class FridoStateReference(BaseModel):
     debs: dict[str, str]
 
 
+class FridoStateResult(BaseModel):
+    steps: Dict[str, str]
+    success: bool
+
+
 class FridoState(BaseModel):
     git: FridoStateGit
     reference: FridoStateReference
+    results: Dict[str, FridoStateResult]
+    todo: List[str]
 
     @classmethod
     def register_path(cls, path: Path):
@@ -83,4 +90,6 @@ git:
 reference:
   version: null
   debs: {}
+results: {}
+todo: []
 """
