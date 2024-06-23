@@ -68,14 +68,12 @@ def init(state_path: Path) -> FridoState:
     Turn a frido state file into a FridoState object.
     """
     if not state_path.exists():
-        state_content = DEFAULT_STATE_CONTENT
-    else:
-        state_content = state_path.read_text()
+        state_path.write_text(DEFAULT_STATE_CONTENT)
 
     # Sync-ing the state can happen from various places, so let's resolve the
     # path before registering it:
     FridoState.register_path(state_path.resolve())
-    obj = yaml.safe_load(state_content)
+    obj = yaml.safe_load(state_path.read_text())
     return FridoState(**obj)
 
 
