@@ -17,11 +17,11 @@ from pathlib import Path
 import requests
 import yaml
 from debian.deb822 import Deb822
-from debian.debian_support import Version as DebianVersion
 from packaging.version import Version
 
 from frido.actions import run_actions
 from frido.config import load_config
+from frido.reference import sync_reference
 
 
 # Resolve the path directly so that we don't have to keep track of the current
@@ -441,91 +441,6 @@ def process():
             sys.exit(0)
 
 
-def download_deb(deb_url: str, deb_path: Path, size: int, sha256: str):
-    """
-    Make sure the specified deb is available locally, with the right size
-    and checksum.
-    """
-    download = False
-    if not deb_path.exists():
-        # First download:
-        download = True
-    else:
-        # File doesn't match (truncated download, rebuild, etc.):
-        local_size = deb_path.stat().st_size
-        local_sha256 = hashlib.file_digest(deb_path.open('rb'), 'sha256')
-        if str(local_size) != size or local_sha256.hexdigest() != sha256:
-            download = True
-
-    if download:
-        reply = requests.get(deb_url, timeout=30)
-        reply.raise_for_status()
-        deb_path.write_bytes(reply.content)
-
-        # FIXME: duplicates earlier check.
-        local_size = deb_path.stat().st_size
-        local_sha256 = hashlib.file_digest(deb_path.open('rb'), 'sha256')
-        if str(local_size) != size or local_sha256.hexdigest() != sha256:
-            logging.error('size or sha256 mismatch for the local file %s', deb_path)
-            sys.exit(1)
-
-
-def sync_reference():
-    """
-    Check the state of the PTS PPA, and make sure reference files are
-    present (to diff against).
-    """
-    packages_path = FC.reference.work_dir.expanduser() / 'Packages'
-    packages_path.parent.mkdir(parents=True, exist_ok=True)
-
-    reply = requests.get(f'{FC.reference.pts_ppa_url}/Packages', timeout=30)
-    reply.raise_for_status()
-    packages_path.write_bytes(reply.content)
-
-    # Extract stanzas for the last version of frida:
-    archs = [build.arch for build in FC.builds]
-    frida_stanzas = {arch: None for arch in archs}
-    for stanza in Deb822.iter_paragraphs(packages_path.read_text()):
-        if stanza['Package'] != 'frida':
-            continue
-
-        arch = stanza['Architecture']
-        if not frida_stanzas[arch]:
-            frida_stanzas[arch] = stanza
-        elif DebianVersion(stanza['Version']) > DebianVersion(frida_stanzas[arch]['Version']):
-            frida_stanzas[arch] = stanza
-
-    # Consistency check:
-    frida_versions = list({stanza['Version'] for stanza in frida_stanzas.values()})
-    if len(frida_versions) != 1:
-        logging.error('unexpected number of versions: %s', frida_versions)
-        sys.exit(1)
-
-    reference_debs = {}
-    for arch, stanza in frida_stanzas.items():
-        if not stanza:
-            logging.error('no frida stanza for architecture %s', arch)
-            sys.exit(1)
-
-        # Make sure any intermediate subdirectory is created if needed:
-        deb_path = FC.reference.work_dir.expanduser() / stanza['Filename']
-        deb_path.parent.mkdir(parents=True, exist_ok=True)
-        download_deb(f'{FC.reference.pts_ppa_url}/{stanza["Filename"]}', deb_path,
-                     stanza['Size'], stanza['SHA256'])
-
-        reference_debs[arch] = stanza['Filename']
-
-    # Remember the reference files:
-    state = {}
-    if STATE_FILE.exists():
-        state = yaml.safe_load(STATE_FILE.read_text())
-    state['reference'] = {
-        'version': frida_versions[0],
-        'debs': reference_debs,
-    }
-    STATE_FILE.write_text(yaml.dump(state, sort_keys=False))
-
-
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     parser = argparse.ArgumentParser(description='Frida auto-packager')
@@ -542,6 +457,6 @@ if __name__ == '__main__':
     if args.detect:
         detect()
     if args.reference:
-        sync_reference()
+        sync_reference(FC, STATE_FILE)
     if args.process:
         process()
