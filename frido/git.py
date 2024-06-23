@@ -4,6 +4,7 @@ Git management.
 
 import argparse
 import os
+import logging
 import re
 from subprocess import PIPE, Popen, check_call, check_output
 
@@ -22,8 +23,11 @@ def refresh_git(fc: FridoConfig, fs: FridoState, args: argparse.Namespace):
     """
     # Sync remotes and detect tags:
     os.chdir(fc.git.work_dir.expanduser())
-    check_call(['git', 'fetch', fc.git.debian_remote])
-    check_call(['git', 'fetch', fc.git.upstream_remote])
+    if args.no_fetch:
+        logging.debug('skipping git fetch as requested')
+    else:
+        check_call(['git', 'fetch', fc.git.debian_remote])
+        check_call(['git', 'fetch', fc.git.upstream_remote])
     check_git_consistency(fc, fs)
     tags = check_output(['git', 'tag', '-l']).decode().splitlines()
 
