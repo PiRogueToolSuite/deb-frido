@@ -2,6 +2,7 @@
 Git management.
 """
 
+import argparse
 import os
 import re
 from subprocess import PIPE, Popen, check_call, check_output
@@ -14,7 +15,7 @@ from .config import FridoConfig
 from .state import FridoState
 
 
-def refresh_git(fc: FridoConfig, fs: FridoState):
+def refresh_git(fc: FridoConfig, fs: FridoState, args: argparse.Namespace):
     """
     Refresh from remotes and analyze the state of the git branches and tags:
     upstream, debian, and locally.

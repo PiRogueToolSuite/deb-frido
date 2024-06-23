@@ -27,14 +27,15 @@ if __name__ == '__main__':
     parser.add_argument('--cheat', action='store_true')
     parser.add_argument('--only-one', action='store_true')
     parser.add_argument('--no-notify', action='store_true')
+    parser.add_argument('--no-fetch', action='store_true')
     args = parser.parse_args()
 
     FC = frido.config.init(CONFIG_FILE)
     FS = frido.state.init(STATE_FILE)
 
     if args.refresh_git:
-        refresh_git(FC, FS)
+        refresh_git(FC, FS, args)
     if args.refresh_reference:
-        refresh_reference(FC, FS)
+        refresh_reference(FC, FS, args)
     if args.process:
         process(FC, FS, args)
