@@ -463,9 +463,8 @@ def sync_reference():
         arch = stanza['Architecture']
         if not frida_stanzas[arch]:
             frida_stanzas[arch] = stanza
-        else:
-            if DebianVersion(stanza['Version']) > DebianVersion(frida_stanzas[arch]['Version']):
-                frida_stanzas[arch] = stanza
+        elif DebianVersion(stanza['Version']) > DebianVersion(frida_stanzas[arch]['Version']):
+            frida_stanzas[arch] = stanza
 
     # Consistency check:
     frida_versions = list({stanza['Version'] for stanza in frida_stanzas.values()})
