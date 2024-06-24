@@ -1,8 +1,8 @@
 [FORMAT]
 # The default 80 limit is a tad hard:
 max-line-length=100
-# Our beloved FridoConfig and FridoState instances:
-good-names = fc,fs
+# Our beloved FridoConfig and FridoState instances, plus generic exception:
+good-names = fc,fs,ex
 
 [MASTER]
 disable=unspecified-encoding,raise-missing-from,broad-exception-caught
