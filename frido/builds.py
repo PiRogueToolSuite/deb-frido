@@ -38,7 +38,7 @@ STEPS = [
 
 
 def build_one(fc: FridoConfig, fs: FridoState,
-                args: argparse.Namespace, version: str) -> FridoStateResult:
+              args: argparse.Namespace, version: str) -> FridoStateResult:
     """
     Run every step for the specified version.
 
