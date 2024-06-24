@@ -54,8 +54,6 @@ def build_one(fc: FridoConfig, fs: FridoState,
     for step in STEPS:
         result.steps[step] = '…'
         status = ''
-        # TODO: Make sure the current branch is the expected one, but don't
-        # force an initial state (in case of local commits).
 
         if step == 'clean':
             # Clean all the things (hopefully):
