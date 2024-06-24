@@ -186,8 +186,6 @@ def build_one(fc: FridoConfig, fs: FridoState,
         elif step == 'publish':
             # Phase 1: Import from the publish queue, warning for each file that
             # already exists with different contents.
-            #
-            # TODO: Compute and publish diff against last official version.
             try:
                 suite_path = fc.ppa.work_dir.expanduser() / fc.ppa.suite
                 suite_path.mkdir(parents=True, exist_ok=True)
