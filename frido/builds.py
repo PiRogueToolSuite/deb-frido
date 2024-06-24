@@ -178,10 +178,10 @@ def build_one(fc: FridoConfig, fs: FridoState,
             # extending the publish_queue directly.
             try:
                 publish_queue.extend(debdiff_files)
-                status += f'✅ queue\n'
+                status += '✅ queue\n'
             except BaseException as ex:
                 print(ex)
-                status += f'❌ queue'
+                status += '❌ queue'
 
         elif step == 'publish':
             # Phase 1: Import from the publish queue, warning for each file that
