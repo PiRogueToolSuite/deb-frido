@@ -17,31 +17,27 @@ from .config import FridoConfig
 from .state import FridoState
 
 
+def check_file_metadata(file_path: Path, size: int, sha256: str):
+    """
+    Check size and sha256sum for a given file.
+    """
+    local_size = file_path.stat().st_size
+    local_sha256 = hashlib.file_digest(file_path.open('rb'), 'sha256')
+    return str(local_size) == size or local_sha256.hexdigest() == sha256
+
+
 def download_deb(deb_url: str, deb_path: Path, size: int, sha256: str):
     """
     Make sure the specified deb is available locally, with the right size
     and checksum.
     """
-    download = False
-    if not deb_path.exists():
-        # First download:
-        download = True
-    else:
-        # File doesn't match (truncated download, rebuild, etc.):
-        local_size = deb_path.stat().st_size
-        local_sha256 = hashlib.file_digest(deb_path.open('rb'), 'sha256')
-        if str(local_size) != size or local_sha256.hexdigest() != sha256:
-            download = True
-
-    if download:
+    # There might be no file, or a file that doesn't match:
+    if not deb_path.exists() or not check_file_metadata(deb_path, size, sha256):
         reply = requests.get(deb_url, timeout=30)
         reply.raise_for_status()
         deb_path.write_bytes(reply.content)
 
-        # FIXME: duplicates earlier check.
-        local_size = deb_path.stat().st_size
-        local_sha256 = hashlib.file_digest(deb_path.open('rb'), 'sha256')
-        if str(local_size) != size or local_sha256.hexdigest() != sha256:
+        if not check_file_metadata(deb_path, size, sha256):
             logging.error('size or sha256 mismatch for the local file %s', deb_path)
             sys.exit(1)
 
