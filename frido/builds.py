@@ -146,8 +146,10 @@ def build_one(fc: FridoConfig, fs: FridoState,
             # We have a list of files to publish, some of them .deb, which we
             # want to check against reference files to generate diffs.
             try:
-                debdiff_files = []
-                for publish_file in publish_queue:
+                # We're adding items to the list while we're looping over it,
+                # which is OK given the .deb extension condition, but pylint
+                # suggests operating on a copy:
+                for publish_file in publish_queue.copy():
                     if not publish_file.endswith('.deb'):
                         continue
 
@@ -166,20 +168,11 @@ def build_one(fc: FridoConfig, fs: FridoState,
                         raise RuntimeError(f'unexpected returncode for debdiff ({debdiff_run.returncode})')
                     debdiff_path = Path('..') / re.sub(r'\.deb', '.debdiff.txt', publish_file)
                     debdiff_path.write_bytes(debdiff_run.stdout)
-                    debdiff_files.append(debdiff_path.name)
+                    publish_queue.append(debdiff_path.name)
                     status += f'✅ {arch}\n'
             except BaseException as ex:
                 print(ex)
                 status += f'❌ {arch}'
-
-            # FIXME: It is a bit silly to have an extra step instead of
-            # extending the publish_queue directly.
-            try:
-                publish_queue.extend(debdiff_files)
-                status += '✅ queue\n'
-            except BaseException as ex:
-                print(ex)
-                status += '❌ queue'
 
         elif step == 'publish':
             # Phase 1: Import from the publish queue, warning for each file that
