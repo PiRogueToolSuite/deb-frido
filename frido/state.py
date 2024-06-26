@@ -12,6 +12,13 @@ from pydantic import BaseModel
 # pylint: disable=missing-class-docstring
 
 
+# Avoid hardcoding emojis all the time, and make them easier to adjust if we
+# wanted to:
+SUCCESS = '✅'
+FAILURE = '❌'
+WARNING = '❗'
+
+
 class FridoStateGitDebian(BaseModel):
     """
     Debian is tricky:
@@ -37,7 +44,7 @@ class FridoStateGit(BaseModel):
 
 
 class FridoStateReference(BaseModel):
-    version: Optional[str]
+    dversion: Optional[str]
     debs: dict[str, str]
 
 
@@ -66,6 +73,11 @@ class FridoState(BaseModel):
 def init(state_path: Path) -> FridoState:
     """
     Turn a frido state file into a FridoState object.
+
+    In addition to what's getting read from the state file, the path to that
+    file is remembered so that it can be updated from various places. An
+    official private attribute could be used instead of a class attribute,
+    but making it work didn't seem trivial.
     """
     if not state_path.exists():
         state_path.write_text(DEFAULT_STATE_CONTENT)
@@ -86,7 +98,7 @@ git:
   upstream:
     tag: null
 reference:
-  version: null
+  dversion: null
   debs: {}
 results: {}
 todo: []

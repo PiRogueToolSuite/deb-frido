@@ -15,7 +15,7 @@ def check_git_consistency(fc: FridoConfig, _fs: FridoState):
     """
     Detect dangerous situations, erroring out if needed.
     """
-    os.chdir(fc.git.work_dir.expanduser())
+    os.chdir(fc.git.work_dir)
     # Having WIP-oriented branches locally might be needed when fixing build
     # failures, but let's make sure we don't autobuild anything from a branch
     # that's not the configured one:
@@ -64,16 +64,18 @@ def check_overall_consistency(fc: FridoConfig, fs: FridoState):
     # consistency (again):
     check_git_consistency(fc, fs)
 
-    # We must hava data!
+    # We must hava data! This is never expected to happen once frido's been set
+    # up properly, hence the sys.exit().
     if fs.git.debian.dversion is None:
         logging.error('no information for git, please use --refresh(-git)')
         sys.exit(1)
-    if fs.reference.version is None:
+    if fs.reference.dversion is None:
         logging.error('no information for reference, please use --refresh(-reference)')
         sys.exit(1)
 
-    # Official things must match!
-    if fs.git.debian.dversion != fs.reference.version:
+    # Official things must match! This might happen if pushes to Git and to the
+    # PPA don't happen in lockstep, hence the RuntimeError.
+    if fs.git.debian.dversion != fs.reference.dversion:
         logging.error('inconsistent versions: %s (git) vs. %s (reference)',
-                      fs.git.debian.dversion, fs.reference.version)
-        sys.exit(1)
+                      fs.git.debian.dversion, fs.reference.dversion)
+        raise RuntimeError('inconsistent versions')

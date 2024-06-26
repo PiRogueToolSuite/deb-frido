@@ -20,10 +20,10 @@ from debian.deb822 import Deb822
 from debian.debian_support import Version as DVersion
 from packaging.version import Version as UVersion
 
-from .checks import check_git_consistency
+from .checks import check_git_consistency, check_overall_consistency
 from .config import FridoConfig
 from .notifications import NotifRefresh, notify_refresh
-from .state import FridoState
+from .state import FridoState, SUCCESS, FAILURE
 
 
 def refresh_git(fc: FridoConfig, fs: FridoState, notif: NotifRefresh):
@@ -32,7 +32,7 @@ def refresh_git(fc: FridoConfig, fs: FridoState, notif: NotifRefresh):
     upstream, debian, and locally.
     """
     # Sync remotes and detect tags:
-    os.chdir(fc.git.work_dir.expanduser())
+    os.chdir(fc.git.work_dir)
     if fc.args.no_fetch:
         logging.debug('skipping git fetch as requested')
     else:
@@ -123,7 +123,7 @@ def refresh_reference(fc: FridoConfig, fs: FridoState, notif: NotifRefresh):
     Check the state of the PTS PPA, and make sure reference files are
     present (to diff against).
     """
-    packages_path = fc.reference.work_dir.expanduser() / 'Packages'
+    packages_path = fc.reference.work_dir / 'Packages'
     packages_path.parent.mkdir(parents=True, exist_ok=True)
 
     reply = requests.get(f'{fc.reference.pts_ppa_url}/Packages', timeout=30)
@@ -154,7 +154,7 @@ def refresh_reference(fc: FridoConfig, fs: FridoState, notif: NotifRefresh):
             sys.exit(1)
 
         # Make sure any intermediate subdirectory is created if needed:
-        deb_path = fc.reference.work_dir.expanduser() / stanza['Filename']
+        deb_path = fc.reference.work_dir / stanza['Filename']
         deb_path.parent.mkdir(parents=True, exist_ok=True)
         download_deb(f'{fc.reference.pts_ppa_url}/{stanza["Filename"]}', deb_path,
                      stanza['Size'], stanza['SHA256'])
@@ -162,8 +162,8 @@ def refresh_reference(fc: FridoConfig, fs: FridoState, notif: NotifRefresh):
         reference_debs[arch] = stanza['Filename']
 
     # Sync to disk:
-    notif.append_metadata('PPA package version', fs.reference.version, frida_versions[0])
-    fs.reference.version = frida_versions[0]
+    notif.append_metadata('PPA package version', fs.reference.dversion, frida_versions[0])
+    fs.reference.dversion = frida_versions[0]
     fs.reference.debs = reference_debs
     fs.sync()
 
@@ -177,5 +177,13 @@ def refresh_all(fc: FridoConfig, fs: FridoState):
         refresh_git(fc, fs, notif)
     if fc.args.refresh_reference:
         refresh_reference(fc, fs, notif)
+
+    # Specify the results twice, we only are about the current value, and don't
+    # want to compare against the previous one:
+    try:
+        check_overall_consistency(fc, fs)
+        notif.append_metadata('Overall consistency', SUCCESS, SUCCESS)
+    except RuntimeError:
+        notif.append_metadata('Overall consistency', FAILURE, FAILURE)
 
     notify_refresh(fc, notif, print_only=fc.args.no_notify)

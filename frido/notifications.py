@@ -69,7 +69,7 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, print_
     else:
         lines.append(f'**Failed automatic packaging: {version}**')
 
-    ppa_suite_path = fc.ppa.work_dir.expanduser() / fc.ppa.suite
+    ppa_suite_path = fc.ppa.work_dir / fc.ppa.suite
     for step, status in result.steps.items():
         # DRY: some steps only have an emoji, some others have details.
         # Compensate in the former case.
@@ -85,7 +85,7 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, print_
                 #    suite's directory;
                 #  - later, we might want lines with 3 links like this:
                 #    [frida_<version>_<arch>.deb] [build log] [debdiff against <reference_version>]
-                if step == 'publish' and (ppa_suite_path / details).exists():
+                if step == 'publish_file' and (ppa_suite_path / details).exists():
                     # Direct download link to packages, debdiffs, build logs, etc.:
                     details = f'[`{details}`]({fc.ppa.publish_url}{fc.ppa.suite}/{details})'
                 lines.append(f'{emoji} {step}: {details}')
@@ -111,7 +111,7 @@ def notify_refresh(fc: FridoConfig, notif: NotifRefresh, print_only: bool = Fals
      - Git upstream version: OLD → NEW
      - Git package version:  OLD~pirogue1 → NEW~pirogue1
      - PPA package version:  OLD~pirogue1 → NEW~pirogue1
-     - Consistency checks:   ✅ or ❌
+     - Overall consistency:  ✅ or ❌
 
     **To do:**
      - NEW1
