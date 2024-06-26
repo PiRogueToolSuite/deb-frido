@@ -122,9 +122,9 @@ def notify_refresh(fc: FridoConfig, notif: NotifRefresh, print_only: bool = Fals
     changes = False
     for metadata in notif.metadata:
         if metadata.old == metadata.new:
-            lines.append(f' - {metadata.title}: {metadata.old}')
+            lines.append(f' - {metadata.title}: `{metadata.old}`')
         else:
-            lines.append(f' - {metadata.title}: {metadata.old} → **{metadata.new}**')
+            lines.append(f' - {metadata.title}: `{metadata.old}` → **`{metadata.new}`**')
             changes = True
     # Initial decision: we don't keep the block if nothing changed.
     if not changes:
@@ -134,7 +134,7 @@ def notify_refresh(fc: FridoConfig, notif: NotifRefresh, print_only: bool = Fals
     if notif.todo:
         lines.append('\n**To do:**')
         for version in notif.todo:
-            lines.append(f' - {version}')
+            lines.append(f' - `{version}`')
 
     # Merge everything together:
     message = '\n'.join(lines).strip()
