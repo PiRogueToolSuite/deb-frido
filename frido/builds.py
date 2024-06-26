@@ -308,7 +308,7 @@ def build_all(fc: FridoConfig, fs: FridoState):
         logging.info('building %s', version)
         result = build_one(fc, fs, version)
 
-        notify_build(fc, version, result, send=not fc.args.no_notify)
+        notify_build(fc, version, result, print_only=fc.args.no_notify)
 
         if not result.success:
             logging.error('automated packaging of %s failed, stopping', version)

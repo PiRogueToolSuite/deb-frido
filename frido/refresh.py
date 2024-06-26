@@ -178,4 +178,4 @@ def refresh_all(fc: FridoConfig, fs: FridoState):
     if fc.args.refresh_reference:
         refresh_reference(fc, fs, notif)
 
-    notify_refresh(fc, notif, send=not fc.args.no_notify)
+    notify_refresh(fc, notif, print_only=fc.args.no_notify)

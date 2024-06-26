@@ -59,7 +59,7 @@ def notify_send(fc: FridoConfig, message: str):
         sys.exit(1)
 
 
-def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, send: bool = True):
+def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, print_only: bool = False):
     """
     Build a message for this version, and send it via a Discord webhook.
     """
@@ -91,15 +91,15 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, send: 
                 lines.append(f'{emoji} {step}: {details}')
     message = '\n'.join(lines).strip()
 
-    # Send or print:
-    if send:
-        notify_send(fc, message)
-    else:
+    # Print or send:
+    if print_only:
         logging.debug('not sending the following notification, as requested')
         print(message)
+    else:
+        notify_send(fc, message)
 
 
-def notify_refresh(fc: FridoConfig, notif: NotifRefresh, send: bool = True):
+def notify_refresh(fc: FridoConfig, notif: NotifRefresh, print_only: bool = False):
     """
     Build a message about refreshed data, and send it via a Discord webhook.
 
@@ -142,9 +142,9 @@ def notify_refresh(fc: FridoConfig, notif: NotifRefresh, send: bool = True):
         logging.debug('no changes, skipping notification')
         return
 
-    # Send or print:
-    if send:
-        notify_send(fc, message)
-    else:
+    # Print or send:
+    if print_only:
         logging.debug('not sending the following notification, as requested')
         print(message)
+    else:
+        notify_send(fc, message)
