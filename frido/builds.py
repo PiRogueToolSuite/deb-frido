@@ -180,7 +180,7 @@ class FridoBuild:
                 debdiff_run = subprocess.run(['debdiff', reference_path, f'../{publish_file}'],
                                              capture_output=True, check=False)
                 if debdiff_run.returncode not in [0, 1]:
-                    raise RuntimeError(f'unexpected returncode for debdiff ({debdiff_run.returncode})')
+                    raise RuntimeError(f'debdiff failed (rc={debdiff_run.returncode})')
                 debdiff_path = Path('..') / re.sub(r'\.deb', '.debdiff.txt', publish_file)
                 debdiff_path.write_bytes(debdiff_run.stdout)
                 self.publish_queue.append(debdiff_path.name)
@@ -351,7 +351,7 @@ def build_all(fc: FridoConfig, fs: FridoState):
 
         frido_build = FridoBuild(fc, fs, version)
         result = frido_build.run_steps()
-        notify_build(fc, version, result, print_only=fc.args.no_notify)
+        notify_build(fc, version, fs.reference.dversion, result, print_only=fc.args.no_notify)
 
         if not result.success:
             logging.error('automated packaging of %s failed, stopping', version)
