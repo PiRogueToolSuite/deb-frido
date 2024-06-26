@@ -162,8 +162,8 @@ def refresh_reference(fc: FridoConfig, fs: FridoState, notif: NotifRefresh):
         reference_debs[arch] = stanza['Filename']
 
     # Sync to disk:
-    notif.append_metadata('PPA package version', fs.reference.version, frida_versions[0])
-    fs.reference.version = frida_versions[0]
+    notif.append_metadata('PPA package version', fs.reference.dversion, frida_versions[0])
+    fs.reference.dversion = frida_versions[0]
     fs.reference.debs = reference_debs
     fs.sync()
 

@@ -44,7 +44,7 @@ class FridoStateGit(BaseModel):
 
 
 class FridoStateReference(BaseModel):
-    version: Optional[str]
+    dversion: Optional[str]
     debs: dict[str, str]
 
 
@@ -98,7 +98,7 @@ git:
   upstream:
     tag: null
 reference:
-  version: null
+  dversion: null
   debs: {}
 results: {}
 todo: []

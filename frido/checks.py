@@ -69,13 +69,13 @@ def check_overall_consistency(fc: FridoConfig, fs: FridoState):
     if fs.git.debian.dversion is None:
         logging.error('no information for git, please use --refresh(-git)')
         sys.exit(1)
-    if fs.reference.version is None:
+    if fs.reference.dversion is None:
         logging.error('no information for reference, please use --refresh(-reference)')
         sys.exit(1)
 
     # Official things must match! This might happen if pushes to Git and to the
     # PPA don't happen in lockstep, hence the RuntimeError.
-    if fs.git.debian.dversion != fs.reference.version:
+    if fs.git.debian.dversion != fs.reference.dversion:
         logging.error('inconsistent versions: %s (git) vs. %s (reference)',
-                      fs.git.debian.dversion, fs.reference.version)
+                      fs.git.debian.dversion, fs.reference.dversion)
         raise RuntimeError('inconsistent versions')
