@@ -57,3 +57,41 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult):
         print(ex)
         logging.error('failed to notify about %s', version)
         sys.exit(1)
+
+
+def notify_refresh(fc: FridoConfig, logs: list[str]):
+    """
+    Build a message about refreshed data, and send it via a Discord webhook.
+
+    Initial implementation: each line below is only included when there is
+    a change. We could store title, old_value, new_value, and show unchanged
+    values as well if we wanted to. Then we would probably want to skip the
+    notification if nothing changed at all.
+
+    **Metadata update:**
+     - Git upstream version: OLD → NEW
+     - Git package version:  OLD~pirogue1 → NEW~pirogue1
+     - PPA package version:  OLD~pirogue1 → NEW~pirogue1
+     - Consistency checks:   ✅ or ❌
+
+    **To do:**
+     - NEW1
+     - NEW2
+    """
+    # FIXME: Factorize/reuse the Discord part of notify_build.
+
+    # The file indirection means we can keep the config file under revision
+    # control without leaking the actual webhook URL:
+    try:
+        webhook_url = fc.discord.webhook_url_file.expanduser().read_text().strip()
+        # As of 2024, 204 (No content) is documented as the status code for
+        # successful webhook usage, but let's be flexible:
+        reply = requests.post(webhook_url,
+                              json={'content': '\n'.join(logs)},
+                              timeout=30)
+        reply.raise_for_status()
+        logging.debug('successfully notified about refreshed data')
+    except BaseException as ex:
+        print(ex)
+        logging.error('failed to notify about refreshed data')
+        sys.exit(1)

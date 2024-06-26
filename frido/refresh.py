@@ -22,14 +22,16 @@ from packaging.version import Version as UVersion
 
 from .checks import check_git_consistency
 from .config import FridoConfig
+from .notifications import notify_refresh
 from .state import FridoState
 
 
-def refresh_git(fc: FridoConfig, fs: FridoState):
+def refresh_git(fc: FridoConfig, fs: FridoState) -> list[str]:
     """
     Refresh from remotes and analyze the state of the git branches and tags:
     upstream, debian, and locally.
     """
+    logs = []
     # Sync remotes and detect tags:
     os.chdir(fc.git.work_dir.expanduser())
     if fc.args.no_fetch:
@@ -44,7 +46,11 @@ def refresh_git(fc: FridoConfig, fs: FridoState):
     upstream_tags = [tag
                      for tag in tags
                      if re.match(fc.git.upstream_tags, tag)]
-    fs.git.upstream.tag = sorted(upstream_tags, key=UVersion)[-1]
+    new = sorted(upstream_tags, key=UVersion)[-1]
+    if new != fs.git.upstream.tag:
+        logs.append(f'Git upstream version: {fs.git.upstream.tag} → {new}')
+    fs.git.upstream.tag = new
+
 
     # Extract Debian information (tricky):
     #  - we might have several tags sharing the same upstream version, and we
@@ -73,17 +79,24 @@ def refresh_git(fc: FridoConfig, fs: FridoState):
         debian_versions[tag] = proc2.communicate()[0].decode().rstrip()
 
     # 4. Sort by values (Debian version), then extract tag and Debian version
-    # from the last one:
+    # from the last one, only logging the Debian version:
     sorted_debian_versions = sorted(debian_versions.items(), key=lambda item: DVersion(item[1]))
     fs.git.debian.tag = sorted_debian_versions[-1][0]
-    fs.git.debian.dversion = sorted_debian_versions[-1][1]
+    new = sorted_debian_versions[-1][1]
+    if new != fs.git.debian.dversion:
+        logs.append(f'Git package version: {fs.git.debian.dversion} → {new}')
+    fs.git.debian.dversion = new
 
     # Compute what needs to be done:
     todo = [tag for tag in upstream_tags if UVersion(tag) > UVersion(fs.git.debian.uversion)]
+    additions = [x for x in sorted(todo, key=UVersion) if x not in fs.todo]
+    if additions:
+        logs.append(f'To do: {additions}')
     fs.todo = sorted(todo, key=UVersion)
 
     # Sync to disk:
     fs.sync()
+    return logs
 
 
 def check_file_metadata(file_path: Path, size: int, sha256: str):
@@ -111,11 +124,12 @@ def download_deb(deb_url: str, deb_path: Path, size: int, sha256: str):
             sys.exit(1)
 
 
-def refresh_reference(fc: FridoConfig, fs: FridoState):
+def refresh_reference(fc: FridoConfig, fs: FridoState) -> list[str]:
     """
     Check the state of the PTS PPA, and make sure reference files are
     present (to diff against).
     """
+    logs = []
     packages_path = fc.reference.work_dir.expanduser() / 'Packages'
     packages_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -154,17 +168,25 @@ def refresh_reference(fc: FridoConfig, fs: FridoState):
 
         reference_debs[arch] = stanza['Filename']
 
+    if frida_versions[0] != fs.reference.version:
+        logs.append(f'PPA package version: {fs.reference.version} → {frida_versions[0]}')
+
     # Sync to disk:
     fs.reference.version = frida_versions[0]
     fs.reference.debs = reference_debs
     fs.sync()
+    return logs
 
 
 def refresh_all(fc: FridoConfig, fs: FridoState):
     """
     Entry point for this module: refresh one or both data sources.
     """
+    logs = []
     if fc.args.refresh_git:
-        refresh_git(fc, fs)
+        logs += refresh_git(fc, fs)
     if fc.args.refresh_reference:
-        refresh_reference(fc, fs)
+        logs += refresh_reference(fc, fs)
+
+    if not fc.args.no_notify:
+        notify_refresh(fc, logs)
