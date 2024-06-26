@@ -85,7 +85,7 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, print_
                 #    suite's directory;
                 #  - later, we might want lines with 3 links like this:
                 #    [frida_<version>_<arch>.deb] [build log] [debdiff against <reference_version>]
-                if step == 'publish' and (ppa_suite_path / details).exists():
+                if step == 'publish_file' and (ppa_suite_path / details).exists():
                     # Direct download link to packages, debdiffs, build logs, etc.:
                     details = f'[`{details}`]({fc.ppa.publish_url}{fc.ppa.suite}/{details})'
                 lines.append(f'{emoji} {step}: {details}')

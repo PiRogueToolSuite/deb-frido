@@ -192,11 +192,10 @@ class FridoBuild:
         return status
 
     @stepmethod
-    def publish(self):
+    def publish_file(self):
         """
-        Phase 1: Import from the publish queue, warning for each file that
-                 already exists with different contents.
-        Phase 2: Refresh indices, even if the previous step failed.
+        Import from the publish queue, warning for each file that already
+        exists with different contents.
         """
         status = ''
         try:
@@ -218,9 +217,16 @@ class FridoBuild:
             # exception:
             print(ex)
             status += f'{FAILURE} {publish_file}\n'
+        return status
 
+    @stepmethod
+    def publish_repo(self):
+        """
+        Refresh indices, publish/sync repository.
+        """
         try:
             # Clean indices first, since apt-archive could pick up existing files:
+            suite_path = self.fc.ppa.work_dir.expanduser() / self.fc.ppa.suite
             for index in suite_path.glob('Packages*'):
                 index.unlink()
             for index in suite_path.glob('Release*'):
@@ -260,13 +266,12 @@ class FridoBuild:
                 os.chdir(self.fc.ppa.work_dir.expanduser())
                 output = subprocess.check_output(shlex.split(self.fc.ppa.publish_wrapper))
             os.chdir(cwd)
-            status += f'{SUCCESS} repository'
+            return SUCCESS
         except BaseException as ex:
             # We do much more than call run_actions(), so always mention the
             # exception:
             print(ex)
-            status += f'{FAILURE} repository'
-        return status
+            return FAILURE
 
     @stepmethod
     def push(self):
