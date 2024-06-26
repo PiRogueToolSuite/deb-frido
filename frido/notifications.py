@@ -38,7 +38,7 @@ class NotifRefresh:
         self.metadata.append(NotifRefreshMetadata(title, old, new))
 
 
-def notify_send(fc: FridoConfig, message: str):
+def notify_send(fc: FridoConfig, message: str, topic: str):
     """
     Actually send the notification to Discord.
 
@@ -53,10 +53,10 @@ def notify_send(fc: FridoConfig, message: str):
                               json={'content': message},
                               timeout=30)
         reply.raise_for_status()
-        logging.debug('successfully notified about refreshed data')
+        logging.debug('successfully notified about %s', topic)
     except BaseException as ex:
         print(ex)
-        logging.error('failed to notify about refreshed data')
+        logging.error('failed to notify about %s', topic)
         sys.exit(1)
 
 
@@ -97,7 +97,7 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, print_
         logging.debug('not sending the following notification, as requested')
         print(message)
     else:
-        notify_send(fc, message)
+        notify_send(fc, message, f'building version {version}')
 
 
 def notify_refresh(fc: FridoConfig, notif: NotifRefresh, print_only: bool = False):
@@ -148,4 +148,4 @@ def notify_refresh(fc: FridoConfig, notif: NotifRefresh, print_only: bool = Fals
         logging.debug('not sending the following notification, as requested')
         print(message)
     else:
-        notify_send(fc, message)
+        notify_send(fc, message, 'refreshing data')
