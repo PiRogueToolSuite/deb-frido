@@ -69,7 +69,7 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, print_
     else:
         lines.append(f'**Failed automatic packaging: {version}**')
 
-    ppa_suite_path = fc.ppa.work_dir.expanduser() / fc.ppa.suite
+    ppa_suite_path = fc.ppa.work_dir / fc.ppa.suite
     for step, status in result.steps.items():
         # DRY: some steps only have an emoji, some others have details.
         # Compensate in the former case.

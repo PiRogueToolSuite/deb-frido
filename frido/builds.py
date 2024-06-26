@@ -51,7 +51,7 @@ class FridoBuild:
         self.uversion = version
         self.dversion = f'{version}{fc.git.debian_suffix}'
         self.publish_queue: list[str] = []
-        os.chdir(fc.git.work_dir.expanduser())
+        os.chdir(fc.git.work_dir)
 
     @stepmethod
     def clean(self):
@@ -176,7 +176,7 @@ class FridoBuild:
                     sys.exit(1)
                 arch = arch_match.group(1)
 
-                reference_path = self.fc.reference.work_dir.expanduser() / self.fs.reference.debs[arch]
+                reference_path = self.fc.reference.work_dir / self.fs.reference.debs[arch]
                 debdiff_run = subprocess.run(['debdiff', reference_path, f'../{publish_file}'],
                                              capture_output=True, check=False)
                 if debdiff_run.returncode not in [0, 1]:
@@ -198,7 +198,7 @@ class FridoBuild:
         """
         status = ''
         try:
-            suite_path = self.fc.ppa.work_dir.expanduser() / self.fc.ppa.suite
+            suite_path = self.fc.ppa.work_dir / self.fc.ppa.suite
             suite_path.mkdir(parents=True, exist_ok=True)
             for publish_file in sorted(self.publish_queue):
                 src_file = Path('..') / publish_file
@@ -225,7 +225,7 @@ class FridoBuild:
         """
         try:
             # Clean indices first, since apt-archive could pick up existing files:
-            suite_path = self.fc.ppa.work_dir.expanduser() / self.fc.ppa.suite
+            suite_path = self.fc.ppa.work_dir / self.fc.ppa.suite
             for index in suite_path.glob('Packages*'):
                 index.unlink()
             for index in suite_path.glob('Release*'):
@@ -262,7 +262,7 @@ class FridoBuild:
             # Switch to the ppa directory for final publish operation (if
             # any), then back to the old current working directory:
             if self.fc.ppa.publish_wrapper:
-                os.chdir(self.fc.ppa.work_dir.expanduser())
+                os.chdir(self.fc.ppa.work_dir)
                 output = subprocess.check_output(shlex.split(self.fc.ppa.publish_wrapper))
             os.chdir(cwd)
             return SUCCESS

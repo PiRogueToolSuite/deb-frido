@@ -32,7 +32,7 @@ def refresh_git(fc: FridoConfig, fs: FridoState, notif: NotifRefresh):
     upstream, debian, and locally.
     """
     # Sync remotes and detect tags:
-    os.chdir(fc.git.work_dir.expanduser())
+    os.chdir(fc.git.work_dir)
     if fc.args.no_fetch:
         logging.debug('skipping git fetch as requested')
     else:
@@ -123,7 +123,7 @@ def refresh_reference(fc: FridoConfig, fs: FridoState, notif: NotifRefresh):
     Check the state of the PTS PPA, and make sure reference files are
     present (to diff against).
     """
-    packages_path = fc.reference.work_dir.expanduser() / 'Packages'
+    packages_path = fc.reference.work_dir / 'Packages'
     packages_path.parent.mkdir(parents=True, exist_ok=True)
 
     reply = requests.get(f'{fc.reference.pts_ppa_url}/Packages', timeout=30)
@@ -154,7 +154,7 @@ def refresh_reference(fc: FridoConfig, fs: FridoState, notif: NotifRefresh):
             sys.exit(1)
 
         # Make sure any intermediate subdirectory is created if needed:
-        deb_path = fc.reference.work_dir.expanduser() / stanza['Filename']
+        deb_path = fc.reference.work_dir / stanza['Filename']
         deb_path.parent.mkdir(parents=True, exist_ok=True)
         download_deb(f'{fc.reference.pts_ppa_url}/{stanza["Filename"]}', deb_path,
                      stanza['Size'], stanza['SHA256'])

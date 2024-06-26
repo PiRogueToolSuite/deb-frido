@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 # Class names are self-explanatory, hush!
 # pylint: disable=missing-class-docstring
@@ -23,6 +23,10 @@ class FridoConfigGit(BaseModel):
     debian_auto_tag_format: str
     debian_suffix: str
 
+    @validator('work_dir')
+    def auto_expanduser(cls, path: Path):
+        return path.expanduser()
+
 
 class FridoConfigBuild(BaseModel):
     arch: str
@@ -36,6 +40,10 @@ class FridoConfigPpa(BaseModel):
     publish_url: str
     publish_wrapper: Optional[str]
 
+    @validator('work_dir')
+    def auto_expanduser(cls, path: Path):
+        return path.expanduser()
+
 
 class FridoConfigDiscord(BaseModel):
     webhook_url_file: Path
@@ -44,6 +52,10 @@ class FridoConfigDiscord(BaseModel):
 class FridoConfigReference(BaseModel):
     work_dir: Path
     pts_ppa_url: str
+
+    @validator('work_dir')
+    def auto_expanduser(cls, path: Path):
+        return path.expanduser()
 
 
 class FridoConfig(BaseModel):
@@ -62,9 +74,6 @@ class FridoConfig(BaseModel):
 def init(config_path: Path) -> FridoConfig:
     """
     Turn a frido configuration file into a FridoConfig object.
-
-    It could probably call expanduser() on a selection of Path objects (all but
-    ppa.suite, which is meant to be a subdirectory of ppa.work_dir).
     """
     obj = yaml.safe_load(config_path.read_text())
     # The static config doesn't know (or at least shouldn't know) about args:

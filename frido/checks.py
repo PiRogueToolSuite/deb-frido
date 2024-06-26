@@ -15,7 +15,7 @@ def check_git_consistency(fc: FridoConfig, _fs: FridoState):
     """
     Detect dangerous situations, erroring out if needed.
     """
-    os.chdir(fc.git.work_dir.expanduser())
+    os.chdir(fc.git.work_dir)
     # Having WIP-oriented branches locally might be needed when fixing build
     # failures, but let's make sure we don't autobuild anything from a branch
     # that's not the configured one:
