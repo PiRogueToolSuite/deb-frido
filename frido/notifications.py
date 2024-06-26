@@ -38,6 +38,27 @@ class NotifRefresh:
         self.metadata.append(NotifRefreshMetadata(title, old, new))
 
 
+def notify_send(fc: FridoConfig, message: str):
+    """
+    Actually send the notification to Discord.
+    """
+    # The file indirection means we can keep the config file under revision
+    # control without leaking the actual webhook URL:
+    try:
+        webhook_url = fc.discord.webhook_url_file.expanduser().read_text().strip()
+        # As of 2024, 204 (No content) is documented as the status code for
+        # successful webhook usage, but let's be flexible:
+        reply = requests.post(webhook_url,
+                              json={'content': message},
+                              timeout=30)
+        reply.raise_for_status()
+        logging.debug('successfully notified about refreshed data')
+    except BaseException as ex:
+        print(ex)
+        logging.error('failed to notify about refreshed data')
+        sys.exit(1)
+
+
 def notify_build(fc: FridoConfig, version: str, result: FridoStateResult):
     """
     Build a message for this version, and send it via a Discord webhook.
@@ -86,7 +107,7 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult):
         sys.exit(1)
 
 
-def notify_refresh(fc: FridoConfig, notif: NotifRefresh):
+def notify_refresh(fc: FridoConfig, notif: NotifRefresh, send: bool = True):
     """
     Build a message about refreshed data, and send it via a Discord webhook.
 
@@ -104,8 +125,6 @@ def notify_refresh(fc: FridoConfig, notif: NotifRefresh):
      - NEW1
      - NEW2
     """
-    # FIXME: Factorize/reuse the Discord part of notify_build.
-
     # Build a metadata block:
     lines = ['**Metadata update:**']
     changes = False
@@ -131,18 +150,9 @@ def notify_refresh(fc: FridoConfig, notif: NotifRefresh):
         logging.debug('no changes, skipping notification')
         return
 
-    # The file indirection means we can keep the config file under revision
-    # control without leaking the actual webhook URL:
-    try:
-        webhook_url = fc.discord.webhook_url_file.expanduser().read_text().strip()
-        # As of 2024, 204 (No content) is documented as the status code for
-        # successful webhook usage, but let's be flexible:
-        reply = requests.post(webhook_url,
-                              json={'content': message},
-                              timeout=30)
-        reply.raise_for_status()
-        logging.debug('successfully notified about refreshed data')
-    except BaseException as ex:
-        print(ex)
-        logging.error('failed to notify about refreshed data')
-        sys.exit(1)
+    # Send or print:
+    if send:
+        notify_send(fc, message)
+    else:
+        logging.debug('not sending the following notification, as requested')
+        print(message)
