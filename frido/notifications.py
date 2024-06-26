@@ -4,11 +4,38 @@ Notification management
 
 import logging
 import sys
+from dataclasses import dataclass, field
+from typing import Optional
 
 import requests
 
 from .config import FridoConfig
 from .state import FridoStateResult
+
+
+@dataclass
+class NotifRefreshMetadata:
+    """
+    Store a title, an old value (if there's one already), and a new value.
+    Both values might be equal.
+    """
+    title: str
+    old: Optional[str]
+    new: str
+
+
+@dataclass
+class NotifRefresh:
+    """
+    Collect information about Git and reference files, and the todo list.
+    """
+    # `field(…)` is used instead of `= []` to set a default value:
+    metadata: list[NotifRefreshMetadata] = field(default_factory=list)
+    todo: list[str] = field(default_factory=list)
+
+    def append_metadata(self, title: str, old: Optional[str], new: str):
+        """Turn the 3 parameters into a proper NotifRefreshMetadata instance."""
+        self.metadata.append(NotifRefreshMetadata(title, old, new))
 
 
 def notify_build(fc: FridoConfig, version: str, result: FridoStateResult):
@@ -59,14 +86,13 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult):
         sys.exit(1)
 
 
-def notify_refresh(fc: FridoConfig, logs: list[str]):
+def notify_refresh(fc: FridoConfig, notif: NotifRefresh):
     """
     Build a message about refreshed data, and send it via a Discord webhook.
 
-    Initial implementation: each line below is only included when there is
-    a change. We could store title, old_value, new_value, and show unchanged
-    values as well if we wanted to. Then we would probably want to skip the
-    notification if nothing changed at all.
+    We build a message based on title, old and new values for each metadata
+    item, but we only output the block is something change, skipping it entirely
+    otherwise.
 
     **Metadata update:**
      - Git upstream version: OLD → NEW
@@ -80,6 +106,31 @@ def notify_refresh(fc: FridoConfig, logs: list[str]):
     """
     # FIXME: Factorize/reuse the Discord part of notify_build.
 
+    # Build a metadata block:
+    lines = ['**Metadata update:**']
+    changes = False
+    for metadata in notif.metadata:
+        if metadata.old == metadata.new:
+            lines.append(f' - {metadata.title}: {metadata.old}')
+        else:
+            lines.append(f' - {metadata.title}: {metadata.old} → **{metadata.new}**')
+            changes = True
+    # Initial decision: we don't keep the block if nothing changed.
+    if not changes:
+        lines = []
+
+    # Add a to do block, only if there are new to do versions:
+    if notif.todo:
+        lines.append('\n**To do:**')
+        for version in notif.todo:
+            lines.append(f' - {version}')
+
+    # Merge everything together:
+    message = '\n'.join(lines).strip()
+    if message == '':
+        logging.debug('no changes, skipping notification')
+        return
+
     # The file indirection means we can keep the config file under revision
     # control without leaking the actual webhook URL:
     try:
@@ -87,7 +138,7 @@ def notify_refresh(fc: FridoConfig, logs: list[str]):
         # As of 2024, 204 (No content) is documented as the status code for
         # successful webhook usage, but let's be flexible:
         reply = requests.post(webhook_url,
-                              json={'content': '\n'.join(logs)},
+                              json={'content': message},
                               timeout=30)
         reply.raise_for_status()
         logging.debug('successfully notified about refreshed data')
