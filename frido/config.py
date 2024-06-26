@@ -2,6 +2,7 @@
 Configuration management
 """
 
+import argparse
 from pathlib import Path
 from typing import List, Optional
 
@@ -51,6 +52,11 @@ class FridoConfig(BaseModel):
     ppa: FridoConfigPpa
     discord: FridoConfigDiscord
     reference: FridoConfigReference
+    args: argparse.Namespace
+
+    # This allows argparse.Namespace even if there are no validators for it:
+    class Config:  # pylint: disable=too-few-public-methods
+        arbitrary_types_allowed = True
 
 
 def init(config_path: Path) -> FridoConfig:
@@ -61,4 +67,6 @@ def init(config_path: Path) -> FridoConfig:
     ppa.suite, which is meant to be a subdirectory of ppa.work_dir).
     """
     obj = yaml.safe_load(config_path.read_text())
+    # The static config doesn't know (or at least shouldn't know) about args:
+    obj |= {'args': argparse.Namespace()}
     return FridoConfig(**obj)

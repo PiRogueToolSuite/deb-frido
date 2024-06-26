@@ -49,8 +49,12 @@ if __name__ == '__main__':
     FC = frido.config.init(CONFIG_FILE)
     FS = frido.state.init(STATE_FILE)
 
+    # Store the “live configuration” alongside the static one to avoid passing
+    # it along all the time:
+    FC.args = args
+
     # Two actions are possible, each of them might send one notification:
     if args.refresh_git or args.refresh_reference:
-        refresh_all(FC, FS, args)
+        refresh_all(FC, FS)
     if args.build:
-        build_all(FC, FS, args)
+        build_all(FC, FS)

@@ -6,7 +6,6 @@ Two things need to be kept up-to-date:
  - the reference files, i.e. frida *.deb referenced in the official PPA.
 """
 
-import argparse
 import hashlib
 import logging
 import os
@@ -26,14 +25,14 @@ from .config import FridoConfig
 from .state import FridoState
 
 
-def refresh_git(fc: FridoConfig, fs: FridoState, args: argparse.Namespace):
+def refresh_git(fc: FridoConfig, fs: FridoState):
     """
     Refresh from remotes and analyze the state of the git branches and tags:
     upstream, debian, and locally.
     """
     # Sync remotes and detect tags:
     os.chdir(fc.git.work_dir.expanduser())
-    if args.no_fetch:
+    if fc.args.no_fetch:
         logging.debug('skipping git fetch as requested')
     else:
         check_call(['git', 'fetch', fc.git.debian_remote])
@@ -112,7 +111,7 @@ def download_deb(deb_url: str, deb_path: Path, size: int, sha256: str):
             sys.exit(1)
 
 
-def refresh_reference(fc: FridoConfig, fs: FridoState, _args: argparse.Namespace):
+def refresh_reference(fc: FridoConfig, fs: FridoState):
     """
     Check the state of the PTS PPA, and make sure reference files are
     present (to diff against).
@@ -161,11 +160,11 @@ def refresh_reference(fc: FridoConfig, fs: FridoState, _args: argparse.Namespace
     fs.sync()
 
 
-def refresh_all(fc: FridoConfig, fs: FridoState, args: argparse.Namespace):
+def refresh_all(fc: FridoConfig, fs: FridoState):
     """
     Entry point for this module: refresh one or both data sources.
     """
-    if args.refresh_git:
-        refresh_git(fc, fs, args)
-    if args.refresh_reference:
-        refresh_reference(fc, fs, args)
+    if fc.args.refresh_git:
+        refresh_git(fc, fs)
+    if fc.args.refresh_reference:
+        refresh_reference(fc, fs)
