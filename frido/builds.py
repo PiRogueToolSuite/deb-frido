@@ -175,7 +175,6 @@ class FridoBuild:
                     logging.error('unable to determine architecture for %s', publish_file)
                     sys.exit(1)
                 arch = arch_match.group(1)
-                logging.debug('determined architecture %s from filename %s', arch, publish_file)
 
                 reference_path = self.fc.reference.work_dir.expanduser() / self.fs.reference.debs[arch]
                 debdiff_run = subprocess.run(['debdiff', reference_path, f'../{publish_file}'],
