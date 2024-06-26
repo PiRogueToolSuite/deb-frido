@@ -41,9 +41,10 @@ class NotifRefresh:
 def notify_send(fc: FridoConfig, message: str):
     """
     Actually send the notification to Discord.
+
+    The file indirection means we can keep the config file under revision
+    control without leaking the actual webhook URL.
     """
-    # The file indirection means we can keep the config file under revision
-    # control without leaking the actual webhook URL:
     try:
         webhook_url = fc.discord.webhook_url_file.expanduser().read_text().strip()
         # As of 2024, 204 (No content) is documented as the status code for
