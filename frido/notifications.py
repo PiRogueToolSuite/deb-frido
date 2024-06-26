@@ -121,7 +121,6 @@ def notify_build(fc: FridoConfig,
     else:
         lines.append(f'**Failed automatic packaging: {uversion}**')
 
-    ppa_suite_path = fc.ppa.work_dir / fc.ppa.suite
     for step, status in result.steps.items():
         # DRY: some steps only have an emoji, some others have details.
         # Compensate in the former case.
@@ -147,7 +146,7 @@ def notify_build(fc: FridoConfig,
             for line in status.splitlines():
                 emoji = line[0]
                 details = line[2:]
-                if step == 'publish_file' and (ppa_suite_path / details).exists():
+                if step == 'publish_file' and (fc.ppa.work_dir / fc.ppa.suite / details).exists():
                     # Direct download link to any file available in the PPA:
                     details = f'[`{details}`]({fc.ppa.publish_url}{fc.ppa.suite}/{details})'
                 lines.append(f'{emoji} {step}: {details}')
