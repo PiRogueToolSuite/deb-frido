@@ -3,14 +3,15 @@ Notification management
 """
 
 import logging
+import re
 import sys
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Tuple
 
 import requests
 
 from .config import FridoConfig
-from .state import FridoStateResult
+from .state import FridoStateResult, SUCCESS, WARNING
 
 
 @dataclass
@@ -60,6 +61,51 @@ def notify_send(fc: FridoConfig, message: str, topic: str):
         sys.exit(1)
 
 
+def combine_files(fc: FridoConfig,
+                  step: str,
+                  lines: list[str]
+                  ) -> Tuple[list[str], dict[str, str]]:
+    """
+    Initially we would iterate over the list and include many links, but
+    what we care about is really the deb files, with build logs and debdiffs
+    deserving a little less emphasis.
+
+    Let's go for the following format, with emoji being either SUCCESS or
+    WARNING depending on the worst case across all files:
+
+    (emoji) [frida_<version>_<arch>.deb] — [build log] — [debdiff against <reference version>]
+
+    Do that when both support files are present for a given .deb, and let the
+    caller iterate over any remaining files in the original fashion.
+    """
+    # Convert lines into a dict with files as keys, emojis as values:
+    files = {line[2:]: line[0] for line in lines}
+
+    # Try and combine files for each .deb:
+    combined_lines = []
+    debs = sorted([x for x in files.keys() if x.endswith('.deb')])
+    for deb in debs:
+        build = re.sub(r'\.deb$', '.build', deb)
+        debdiff = re.sub(r'\.deb$', '.debdiff.txt', deb)
+        if build in files and debdiff in files:
+            # Since the caller checked the overall status is a success we can
+            # only have SUCCESS and WARNING here:
+            emoji = WARNING if WARNING in [files[deb], files[build], files[debdiff]] else SUCCESS
+            base_url = f'{fc.ppa.publish_url}{fc.ppa.suite}'
+
+            combined_lines.append(
+                f'{emoji} {step}:'
+                f' [`{deb}`]({base_url}/{deb})'
+                f' — [build log]({base_url}/{build})'
+                f' — [debdiff against reference]({base_url}/{debdiff})'
+            )
+            # Forget all those files that go together:
+            del files[deb]
+            del files[build]
+            del files[debdiff]
+    return combined_lines, files
+
+
 def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, print_only: bool = False):
     """
     Build a message for this version, and send it via a Discord webhook.
@@ -76,18 +122,26 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, print_
         # Compensate in the former case.
         if len(status) == 1:
             lines.append(f'{status} {step}')
+        elif step == 'publish_file' and result.success:
+            # Combine .deb with their build log and debdiff files if present,
+            # but include a fallback if some files are missing, and also for any
+            # other files that might be present.
+            #
+            # We only use this format if the overall result is a success.
+            # Otherwise we fall back to the initial implementation: the failing
+            # step might be publish_file, in which case we want some linear
+            # view.
+            combined_lines, remaining_items = combine_files(fc, step, status.splitlines())
+            lines.extend(combined_lines)
+            for item, emoji in remaining_items.items():
+                lines.append(f'{emoji} {step}: {item}')
         else:
             # The following works for single and multiple lines:
             for line in status.splitlines():
                 emoji = line[0]
                 details = line[2:]
-                # And we might adjust details:
-                #  - for now, add a download link of that's a file in the
-                #    suite's directory;
-                #  - later, we might want lines with 3 links like this:
-                #    [frida_<version>_<arch>.deb] [build log] [debdiff against <reference_version>]
                 if step == 'publish_file' and (ppa_suite_path / details).exists():
-                    # Direct download link to packages, debdiffs, build logs, etc.:
+                    # Direct download link to any file available in the PPA:
                     details = f'[`{details}`]({fc.ppa.publish_url}{fc.ppa.suite}/{details})'
                 lines.append(f'{emoji} {step}: {details}')
     message = '\n'.join(lines).strip()
