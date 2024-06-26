@@ -106,15 +106,15 @@ def combine_files(fc: FridoConfig,
     return combined_lines, files
 
 
-def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, print_only: bool = False):
+def notify_build(fc: FridoConfig, uversion: str, result: FridoStateResult, print_only: bool = False):
     """
     Build a message for this version, and send it via a Discord webhook.
     """
     lines = []
     if result.success:
-        lines.append(f'**Successful automatic packaging: {version}**')
+        lines.append(f'**Successful automatic packaging: {uversion}**')
     else:
-        lines.append(f'**Failed automatic packaging: {version}**')
+        lines.append(f'**Failed automatic packaging: {uversion}**')
 
     ppa_suite_path = fc.ppa.work_dir / fc.ppa.suite
     for step, status in result.steps.items():
@@ -151,7 +151,7 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, print_
         logging.debug('not sending the following notification, as requested')
         print(message)
     else:
-        notify_send(fc, message, f'building version {version}')
+        notify_send(fc, message, f'building version {uversion}')
 
 
 def notify_refresh(fc: FridoConfig, notif: NotifRefresh, print_only: bool = False):
