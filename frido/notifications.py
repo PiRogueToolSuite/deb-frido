@@ -11,7 +11,7 @@ from .config import FridoConfig
 from .state import FridoStateResult
 
 
-def notify(fc: FridoConfig, version: str, result: FridoStateResult):
+def notify_build(fc: FridoConfig, version: str, result: FridoStateResult):
     """
     Build a message for this version, and send it via a Discord webhook.
     """

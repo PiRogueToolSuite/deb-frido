@@ -16,7 +16,7 @@ from debian.deb822 import Deb822
 
 from .actions import run_actions
 from .checks import check_overall_consistency
-from .notifications import notify
+from .notifications import notify_build
 
 from .config import FridoConfig
 from .state import FridoState, FridoStateResult
@@ -311,7 +311,7 @@ def build_all(fc: FridoConfig, fs: FridoState):
         if fc.args.no_notify:
             logging.debug('skipping notification as requested')
         else:
-            notify(fc, version, result)
+            notify_build(fc, version, result)
 
         if not result.success:
             logging.error('automated packaging of %s failed, stopping', version)
