@@ -20,7 +20,7 @@ from debian.deb822 import Deb822
 from debian.debian_support import Version as DVersion
 from packaging.version import Version as UVersion
 
-from .checks import check_git_consistency
+from .checks import check_git_consistency, check_overall_consistency
 from .config import FridoConfig
 from .notifications import NotifRefresh, notify_refresh
 from .state import FridoState
@@ -177,5 +177,13 @@ def refresh_all(fc: FridoConfig, fs: FridoState):
         refresh_git(fc, fs, notif)
     if fc.args.refresh_reference:
         refresh_reference(fc, fs, notif)
+
+    # Specify the results twice, we only are about the current value, and don't
+    # want to compare against the previous one:
+    try:
+        check_overall_consistency(fc, fs)
+        notif.append_metadata('Overall consistency', '✅', '✅')
+    except RuntimeError:
+        notif.append_metadata('Overall consistency', '❌', '❌')
 
     notify_refresh(fc, notif, print_only=fc.args.no_notify)

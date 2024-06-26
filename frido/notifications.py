@@ -111,7 +111,7 @@ def notify_refresh(fc: FridoConfig, notif: NotifRefresh, print_only: bool = Fals
      - Git upstream version: OLD → NEW
      - Git package version:  OLD~pirogue1 → NEW~pirogue1
      - PPA package version:  OLD~pirogue1 → NEW~pirogue1
-     - Consistency checks:   ✅ or ❌
+     - Overall consistency:  ✅ or ❌
 
     **To do:**
      - NEW1
