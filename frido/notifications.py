@@ -59,7 +59,7 @@ def notify_send(fc: FridoConfig, message: str):
         sys.exit(1)
 
 
-def notify_build(fc: FridoConfig, version: str, result: FridoStateResult):
+def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, send: bool = True):
     """
     Build a message for this version, and send it via a Discord webhook.
     """
@@ -90,21 +90,12 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult):
                     details = f'[`{details}`]({fc.ppa.publish_url}{fc.ppa.suite}/{details})'
                 message.append(f'{emoji} {step}: {details}')
 
-    # The file indirection means we can keep the config file under revision
-    # control without leaking the actual webhook URL:
-    try:
-        webhook_url = fc.discord.webhook_url_file.expanduser().read_text().strip()
-        # As of 2024, 204 (No content) is documented as the status code for
-        # successful webhook usage, but let's be flexible:
-        reply = requests.post(webhook_url,
-                              json={'content': '\n'.join(message)},
-                              timeout=30)
-        reply.raise_for_status()
-        logging.debug('successfully notified about %s', version)
-    except BaseException as ex:
-        print(ex)
-        logging.error('failed to notify about %s', version)
-        sys.exit(1)
+    # Send or print:
+    if send:
+        notify_send(fc, '\n'.join(message).strip())
+    else:
+        logging.debug('not sending the following notification, as requested')
+        print(message)
 
 
 def notify_refresh(fc: FridoConfig, notif: NotifRefresh, send: bool = True):
