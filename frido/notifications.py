@@ -63,6 +63,7 @@ def notify_send(fc: FridoConfig, message: str, topic: str):
 
 def combine_files(fc: FridoConfig,
                   step: str,
+                  reference_dversion: str,
                   lines: list[str]
                   ) -> Tuple[list[str], dict[str, str]]:
     """
@@ -97,7 +98,7 @@ def combine_files(fc: FridoConfig,
                 f'{emoji} {step}:'
                 f' [`{deb}`]({base_url}/{deb})'
                 f' — [build log]({base_url}/{build})'
-                f' — [debdiff against reference]({base_url}/{debdiff})'
+                f' — [debdiff against {reference_dversion}]({base_url}/{debdiff})'
             )
             # Forget all those files that go together:
             del files[deb]
@@ -108,6 +109,7 @@ def combine_files(fc: FridoConfig,
 
 def notify_build(fc: FridoConfig,
                  uversion: str,
+                 reference_dversion: str,
                  result: FridoStateResult,
                  print_only: bool = False):
     """
@@ -134,7 +136,9 @@ def notify_build(fc: FridoConfig,
             # Otherwise we fall back to the initial implementation: the failing
             # step might be publish_file, in which case we want some linear
             # view.
-            combined_lines, remaining_items = combine_files(fc, step, status.splitlines())
+            combined_lines, remaining_items = combine_files(
+                fc, step, reference_dversion, status.splitlines()
+            )
             lines.extend(combined_lines)
             for item, emoji in remaining_items.items():
                 lines.append(f'{emoji} {step}: {item}')
