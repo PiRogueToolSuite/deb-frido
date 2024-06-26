@@ -63,18 +63,18 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, send: 
     """
     Build a message for this version, and send it via a Discord webhook.
     """
-    message = []
+    lines = []
     if result.success:
-        message.append(f'**Successful automatic packaging: {version}**')
+        lines.append(f'**Successful automatic packaging: {version}**')
     else:
-        message.append(f'**Failed automatic packaging: {version}**')
+        lines.append(f'**Failed automatic packaging: {version}**')
 
     ppa_suite_path = fc.ppa.work_dir.expanduser() / fc.ppa.suite
     for step, status in result.steps.items():
         # DRY: some steps only have an emoji, some others have details.
         # Compensate in the former case.
         if len(status) == 1:
-            message.append(f'{status} {step}')
+            lines.append(f'{status} {step}')
         else:
             # The following works for single and multiple lines:
             for line in status.splitlines():
@@ -88,11 +88,12 @@ def notify_build(fc: FridoConfig, version: str, result: FridoStateResult, send: 
                 if step == 'publish' and (ppa_suite_path / details).exists():
                     # Direct download link to packages, debdiffs, build logs, etc.:
                     details = f'[`{details}`]({fc.ppa.publish_url}{fc.ppa.suite}/{details})'
-                message.append(f'{emoji} {step}: {details}')
+                lines.append(f'{emoji} {step}: {details}')
+    message = '\n'.join(lines).strip()
 
     # Send or print:
     if send:
-        notify_send(fc, '\n'.join(message).strip())
+        notify_send(fc, message)
     else:
         logging.debug('not sending the following notification, as requested')
         print(message)
