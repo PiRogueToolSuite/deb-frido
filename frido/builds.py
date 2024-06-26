@@ -71,8 +71,8 @@ class FridoBuild:
         """
         try:
             run_actions('prepare', {
-                'version': self.uversion,
-                'fullversion': self.dversion,
+                'uversion': self.uversion,
+                'dversion': self.dversion,
             })
             return SUCCESS
         except BaseException:
@@ -86,7 +86,7 @@ class FridoBuild:
         """
         try:
             run_actions('patch', {
-                'fullversion': self.dversion,
+                'dversion': self.dversion,
                 'tagformat': self.fc.git.debian_auto_tag_format,
             })
             return SUCCESS

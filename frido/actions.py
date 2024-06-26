@@ -23,21 +23,21 @@ ACTIONS = {
         'git submodule foreach git clean -xdf',
     ],
     'prepare': [
-        # Dependencies: version and fullversion.
-        'git merge %(version)s',
+        # Dependencies: uversion and dversion.
+        'git merge %(uversion)s',
         'git submodule update --init',
-        'dch -v %(fullversion)s "New upstream release."',
+        'dch -v %(dversion)s "New upstream release."',
         'git add debian/changelog',
         'git commit -m "Bump changelog."',
     ],
     'patch': [
-        # Dependencies: fullversion and tagformat.
+        # Dependencies: dversion and tagformat.
         'quilt push -a',
         'quilt pop -a',
         'rm -rf .pc',
         'dch -r ""',
         'git add debian/changelog',
-        'git commit -m "Release %(fullversion)s"',
+        'git commit -m "Release %(dversion)s"',
         # Generating a new auto tag might be needed while fixing things up,
         # hence --retag to avoid failures if tags weren't deleted manually:
         'gbp tag --retag --ignore-branch --debian-tag %(tagformat)s',
