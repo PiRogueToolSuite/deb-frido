@@ -19,7 +19,7 @@ from .checks import check_overall_consistency
 from .notifications import notify_build
 
 from .config import FridoConfig
-from .state import FridoState, FridoStateResult
+from .state import FridoState, FridoStateResult, SUCCESS, FAILURE
 
 
 # Successive steps for each version. Some of them only return an OK/KO status
@@ -57,9 +57,9 @@ def build_one(fc: FridoConfig, fs: FridoState, version: str) -> FridoStateResult
             # Clean all the things (hopefully):
             try:
                 run_actions(step, {})
-                status = '✅'
+                status = SUCCESS
             except BaseException:
-                status = '❌'
+                status = FAILURE
 
         elif step == 'prepare':
             # Merge and bump changelog:
@@ -68,9 +68,9 @@ def build_one(fc: FridoConfig, fs: FridoState, version: str) -> FridoStateResult
                     'version': version,
                     'fullversion': fullversion,
                 })
-                status = '✅'
+                status = SUCCESS
             except BaseException:
-                status = '❌'
+                status = FAILURE
 
         elif step == 'patch':
             # Apply/deapply patches, finalize changelog (that last commit can be
@@ -80,9 +80,9 @@ def build_one(fc: FridoConfig, fs: FridoState, version: str) -> FridoStateResult
                     'fullversion': fullversion,
                     'tagformat': fc.git.debian_auto_tag_format,
                 })
-                status = '✅'
+                status = SUCCESS
             except BaseException:
-                status = '❌'
+                status = FAILURE
 
         elif step == 'build':
             # Build for each configured architecture, one after another. The
@@ -127,18 +127,18 @@ def build_one(fc: FridoConfig, fs: FridoState, version: str) -> FridoStateResult
                              for line in changes['Files'].splitlines()
                              if line.endswith('.deb') or line.endswith('.buildinfo')]
                     publish_queue.extend(files)
-                    status += f'✅ {build.arch}\n'
+                    status += f'{SUCCESS} {build.arch}\n'
             except subprocess.CalledProcessError as ex:
                 lines = 20
                 logging.error('Failure while running %s: (last %d lines)', ex.cmd, lines)
                 for line in ex.stdout.decode().splitlines()[-lines:]:
                     logging.error('  %s', line)
-                status += f'❌ {build.arch}'
+                status += f'{FAILURE} {build.arch}'
             except BaseException as ex:
                 # We do much more than call run_actions(), so always mention the
                 # exception:
                 print(ex)
-                status += f'❌ {build.arch}'
+                status += f'{FAILURE} {build.arch}'
 
         elif step == 'debdiff':
             # We have a list of files to publish, some of them .deb, which we
@@ -167,10 +167,10 @@ def build_one(fc: FridoConfig, fs: FridoState, version: str) -> FridoStateResult
                     debdiff_path = Path('..') / re.sub(r'\.deb', '.debdiff.txt', publish_file)
                     debdiff_path.write_bytes(debdiff_run.stdout)
                     publish_queue.append(debdiff_path.name)
-                    status += f'✅ {arch}\n'
+                    status += f'{SUCCESS} {arch}\n'
             except BaseException as ex:
                 print(ex)
-                status += f'❌ {arch}'
+                status += f'{FAILURE} {arch}'
 
         elif step == 'publish':
             # Phase 1: Import from the publish queue, warning for each file that
@@ -181,7 +181,7 @@ def build_one(fc: FridoConfig, fs: FridoState, version: str) -> FridoStateResult
                 for publish_file in sorted(publish_queue):
                     src_file = Path('..') / publish_file
                     dst_file = suite_path / publish_file
-                    icon = '✅'
+                    icon = SUCCESS
                     if dst_file.exists():
                         src_digest = hashlib.file_digest(src_file.open('rb'), 'sha256')
                         dst_digest = hashlib.file_digest(dst_file.open('rb'), 'sha256')
@@ -193,7 +193,7 @@ def build_one(fc: FridoConfig, fs: FridoState, version: str) -> FridoStateResult
                 # We do much more than call run_actions(), so always mention the
                 # exception:
                 print(ex)
-                status += f'❌ {publish_file}\n'
+                status += f'{FAILURE} {publish_file}\n'
 
             # Phase 2: Refresh indices, even if the previous step failed.
             try:
@@ -237,12 +237,12 @@ def build_one(fc: FridoConfig, fs: FridoState, version: str) -> FridoStateResult
                     os.chdir(fc.ppa.work_dir.expanduser())
                     output = subprocess.check_output(shlex.split(fc.ppa.publish_wrapper))
                 os.chdir(cwd)
-                status += '✅ repository'
+                status += f'{SUCCESS} repository'
             except BaseException as ex:
                 # We do much more than call run_actions(), so always mention the
                 # exception:
                 print(ex)
-                status += '❌ repository'
+                status += f'{FAILURE} repository'
 
         elif step == 'push':
             # Push branch and tag to our git repository:
@@ -260,18 +260,18 @@ def build_one(fc: FridoConfig, fs: FridoState, version: str) -> FridoStateResult
                     'branch': fc.git.debian_auto_branch,
                     'tag': tag,
                 })
-                status = '✅'
+                status = SUCCESS
             except BaseException as ex:
                 # We do a little more than call run_actions(), so always mention
                 # the exception:
                 print(ex)
-                status = '❌'
+                status = FAILURE
 
         # Log, remember, and stop here if a failure is spotted:
         for line in status.splitlines():
             logging.info('step %s: %s', step, line)
         result.steps[step] = status
-        if status.find('❌') != -1:
+        if status.find(FAILURE) != -1:
             result.success = False
             break
 
