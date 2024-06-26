@@ -77,8 +77,11 @@ class FridoConfig(BaseModel):
 def init(config_path: Path) -> FridoConfig:
     """
     Turn a frido configuration file into a FridoConfig object.
+
+    The static config read from the configuration file is augmented with an
+    empty args, which the caller can filled to keep track of the dynamic config
+    (based on CLI options).
     """
     obj = yaml.safe_load(config_path.read_text())
-    # The static config doesn't know (or at least shouldn't know) about args:
     obj |= {'args': argparse.Namespace()}
     return FridoConfig(**obj)
