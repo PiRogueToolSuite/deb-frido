@@ -2,7 +2,6 @@
 Builds management.
 """
 
-import argparse
 import hashlib
 import logging
 import os
@@ -17,7 +16,7 @@ from debian.deb822 import Deb822
 
 from .actions import run_actions
 from .checks import check_overall_consistency
-from .notifications import notify
+from .notifications import notify_build
 
 from .config import FridoConfig
 from .state import FridoState, FridoStateResult
@@ -37,8 +36,7 @@ STEPS = [
 ]
 
 
-def build_one(fc: FridoConfig, fs: FridoState,
-              args: argparse.Namespace, version: str) -> FridoStateResult:
+def build_one(fc: FridoConfig, fs: FridoState, version: str) -> FridoStateResult:
     """
     Run every step for the specified version.
 
@@ -104,7 +102,7 @@ def build_one(fc: FridoConfig, fs: FridoState,
                     # building for real, and reusing it when cheating.
                     cheating_file = f'../cheat/frida_{fullversion}_{build.arch}.files'
                     dpkg_genchanges_options = []
-                    if args.cheat:
+                    if fc.args.cheat:
                         build_cmd = 'true'
                         dpkg_genchanges_options = [f'-f{cheating_file}']
 
@@ -115,7 +113,7 @@ def build_one(fc: FridoConfig, fs: FridoState,
 
                     # Run the build:
                     subprocess.check_output(shlex.split(build_cmd))
-                    if not args.cheat:
+                    if not fc.args.cheat:
                         shutil.copy('debian/files', cheating_file)
 
                     # Collect information for publication:
@@ -282,7 +280,7 @@ def build_one(fc: FridoConfig, fs: FridoState,
     return result
 
 
-def build_all(fc: FridoConfig, fs: FridoState, args: argparse.Namespace):
+def build_all(fc: FridoConfig, fs: FridoState):
     """
     Iterate over the todo list, building as requested.
 
@@ -308,17 +306,14 @@ def build_all(fc: FridoConfig, fs: FridoState, args: argparse.Namespace):
 
         # Otherwise: process, notify, and maybe continue:
         logging.info('building %s', version)
-        result = build_one(fc, fs, args, version)
+        result = build_one(fc, fs, version)
 
-        if args.no_notify:
-            logging.debug('skipping notification as requested')
-        else:
-            notify(fc, version, result)
+        notify_build(fc, version, result, print_only=fc.args.no_notify)
 
         if not result.success:
             logging.error('automated packaging of %s failed, stopping', version)
             sys.exit(1)
 
-        if args.only_one:
+        if fc.args.only_one:
             logging.debug('building only one version as requested, stopping')
             sys.exit(0)

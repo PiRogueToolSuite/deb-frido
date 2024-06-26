@@ -30,9 +30,9 @@ def check_git_consistency(fc: FridoConfig, _fs: FridoState):
     #  - both are equal: OK
     #  - local ahead: OK
     #  - remote might be ahead: should be OK; a fast-forward merge is performed,
-    #    to to avoid having to merge manually when official work is pushed to
-    #    the remote from a different machine (e.g. a developer pushes an
-    #    official tag and/or new commits are staged for a later version).
+    #    to avoid having to merge manually when official work is pushed to the
+    #    remote from a different machine (e.g. a developer pushes an official
+    #    tag and/or new commits are staged for a later version).
     local_is_ancestor = run(['git', 'merge-base', '--is-ancestor',
                              fc.git.debian_branch,
                              f'{fc.git.debian_remote}/{fc.git.debian_branch}'],

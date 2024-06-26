@@ -10,8 +10,7 @@ from pathlib import Path
 import frido.config
 import frido.state
 from frido.builds import build_all
-from frido.git import refresh_git
-from frido.reference import refresh_reference
+from frido.refresh import refresh_all
 
 
 CONFIG_FILE = Path('config.yaml')
@@ -50,9 +49,12 @@ if __name__ == '__main__':
     FC = frido.config.init(CONFIG_FILE)
     FS = frido.state.init(STATE_FILE)
 
-    if args.refresh_git:
-        refresh_git(FC, FS, args)
-    if args.refresh_reference:
-        refresh_reference(FC, FS, args)
+    # Store the “live configuration” alongside the static one to avoid passing
+    # it along all the time:
+    FC.args = args
+
+    # Two actions are possible, each of them might send one notification:
+    if args.refresh_git or args.refresh_reference:
+        refresh_all(FC, FS)
     if args.build:
-        build_all(FC, FS, args)
+        build_all(FC, FS)
