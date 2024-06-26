@@ -9,8 +9,11 @@ from typing import List, Optional
 import yaml
 from pydantic import BaseModel, validator
 
-# Class names are self-explanatory, hush!
-# pylint: disable=missing-class-docstring
+# Class names and validator methods are self-explanatory, hush! Also, validators
+# take a class as first parameter:
+#   pylint: disable=missing-class-docstring
+#   pylint: disable=missing-function-docstring
+#   pylint: disable=no-self-argument
 
 class FridoConfigGit(BaseModel):
     work_dir: Path
