@@ -12,6 +12,12 @@ from pydantic import BaseModel
 # pylint: disable=missing-class-docstring
 
 
+# Avoid hardcoding emojis all the time, and make them easier to adjust if we
+# wanted to:
+SUCCESS = '✅'
+FAILURE = '❌'
+
+
 class FridoStateGitDebian(BaseModel):
     """
     Debian is tricky:

@@ -23,7 +23,7 @@ from packaging.version import Version as UVersion
 from .checks import check_git_consistency, check_overall_consistency
 from .config import FridoConfig
 from .notifications import NotifRefresh, notify_refresh
-from .state import FridoState
+from .state import FridoState, SUCCESS, FAILURE
 
 
 def refresh_git(fc: FridoConfig, fs: FridoState, notif: NotifRefresh):
@@ -182,8 +182,8 @@ def refresh_all(fc: FridoConfig, fs: FridoState):
     # want to compare against the previous one:
     try:
         check_overall_consistency(fc, fs)
-        notif.append_metadata('Overall consistency', '✅', '✅')
+        notif.append_metadata('Overall consistency', SUCCESS, SUCCESS)
     except RuntimeError:
-        notif.append_metadata('Overall consistency', '❌', '❌')
+        notif.append_metadata('Overall consistency', FAILURE, FAILURE)
 
     notify_refresh(fc, notif, print_only=fc.args.no_notify)
