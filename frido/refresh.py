@@ -59,10 +59,10 @@ def refresh_git(fc: FridoConfig, fs: FridoState) -> list[str]:
     #    being able to revert gbp tag's substitutions (~ → _ notably).
     #
     # 1. Start with detecting the last upstream version that was packaged:
-    debian_uversions = [version_match.group(1)
-                        for tag in tags
-                        if (version_match := re.match(fc.git.debian_tags, tag))]
-    fs.git.debian.uversion = sorted(debian_uversions, key=UVersion)[-1]
+    fs.git.debian.uversion = sorted([version_match.group(1)
+                                     for tag in tags
+                                     if (version_match := re.match(fc.git.debian_tags, tag))],
+                                    key=UVersion)[-1]
 
     # 2. Collect the matching tags for that upstream version (one or more):
     debian_tags = [tag
