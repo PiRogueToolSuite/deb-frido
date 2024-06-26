@@ -16,6 +16,7 @@ from pydantic import BaseModel
 # wanted to:
 SUCCESS = '✅'
 FAILURE = '❌'
+WARNING = '❗'
 
 
 class FridoStateGitDebian(BaseModel):

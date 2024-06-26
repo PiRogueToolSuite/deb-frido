@@ -19,7 +19,7 @@ from .checks import check_overall_consistency
 from .notifications import notify_build
 
 from .config import FridoConfig
-from .state import FridoState, FridoStateResult, SUCCESS, FAILURE
+from .state import FridoState, FridoStateResult, SUCCESS, FAILURE, WARNING
 
 
 # Successive steps for each version. Some of them only return an OK/KO status
@@ -186,7 +186,7 @@ def build_one(fc: FridoConfig, fs: FridoState, version: str) -> FridoStateResult
                         src_digest = hashlib.file_digest(src_file.open('rb'), 'sha256')
                         dst_digest = hashlib.file_digest(dst_file.open('rb'), 'sha256')
                         if src_digest.hexdigest() != dst_digest.hexdigest():
-                            icon = '❗'
+                            icon = WARNING
                     shutil.copy(src_file, dst_file)
                     status += f'{icon} {publish_file}\n'
             except BaseException as ex:
