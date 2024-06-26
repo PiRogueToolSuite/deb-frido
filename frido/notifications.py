@@ -106,7 +106,10 @@ def combine_files(fc: FridoConfig,
     return combined_lines, files
 
 
-def notify_build(fc: FridoConfig, uversion: str, result: FridoStateResult, print_only: bool = False):
+def notify_build(fc: FridoConfig,
+                 uversion: str,
+                 result: FridoStateResult,
+                 print_only: bool = False):
     """
     Build a message for this version, and send it via a Discord webhook.
     """
