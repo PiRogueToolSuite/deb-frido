@@ -19,13 +19,13 @@ ACTIONS = {
         # Dependencies: none.
         'git checkout -f',
         'git clean -xdf',
-        'git submodule foreach git checkout -f',
-        'git submodule foreach git clean -xdf',
+        'git submodule foreach --recursive git checkout -f',
+        'git submodule foreach --recursive git clean -xdf',
     ],
     'prepare': [
         # Dependencies: uversion and dversion.
         'git merge %(uversion)s',
-        'git submodule update --init',
+        'git submodule update --init --recursive',
         'dch -v %(dversion)s "New upstream release."',
         'git add debian/changelog',
         'git commit -m "Bump changelog."',
