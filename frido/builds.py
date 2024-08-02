@@ -296,6 +296,45 @@ class FridoBuild:
             print(ex)
             return FAILURE
 
+    @stepmethod
+    def final_check(self):
+        """
+        Check whether to move on to the next build or consider this one
+        a failure or something to look into (e.g. lintian errors).
+        """
+        # FIXME: try/except the following, otherwise a failure isn't registered
+        # in the state file.
+
+        # Initially, focus on lintian's output, tracking errors, but not the
+        # known bug (bad-distribution-in-changes-file), based on build logs.
+        build_log_paths = [Path('..') / x for x in self.publish_queue
+                           if x.endswith('.build')]
+        logging.warning('build logs: %s', list(build_log_paths))
+        errors: dict[str, int] = {}
+        for build_log_path in build_log_paths:
+            log = build_log_path.read_text()
+            errors[build_log_path.name] = 0
+            lintian_start = False
+            for line in log.splitlines():
+                if line.startswith('Now running lintian'):
+                    lintian_start = True
+                    continue
+                if line.startswith('Finished running lintian'):
+                    lintian_start = False
+                    break
+                if not lintian_start:
+                    continue
+                if line.startswith('E:') and line.find('bad-distribution-in-changes-file') == -1:
+                    errors[build_log_path.name] += 1
+
+        # We want 0 errors at all, and we might have different number of errors
+        # in each file:
+        total_errors = sum(errors.values())
+        if total_errors > 0:
+            details = ', '.join([f'{y} in {x}' for x, y in errors.items()])
+            return f'{FAILURE} {total_errors} lintian errors ({details})'
+        return f'{SUCCESS} 0 lintian errors'
+
     def run_steps(self) -> FridoStateResult:
         """
         Step dispatcher, iterating over (decorated) steps.
