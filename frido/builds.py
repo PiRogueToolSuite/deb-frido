@@ -310,7 +310,6 @@ class FridoBuild:
         # known bug (bad-distribution-in-changes-file), based on build logs.
         build_log_paths = [Path('..') / x for x in self.publish_queue
                            if x.endswith('.build')]
-        logging.warning('build logs: %s', list(build_log_paths))
         errors: dict[str, int] = {}
         for build_log_path in build_log_paths:
             log = build_log_path.read_text()
