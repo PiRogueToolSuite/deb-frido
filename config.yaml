@@ -9,6 +9,7 @@ git:
   debian_auto_branch: auto/debian/bookworm
   debian_auto_tag_format: auto/debian/%(version)s
   debian_suffix: ~pirogue1
+  signing_key: '0xC72EE83EDF59D743EA0D4DD13494A52D59CD510A'
 builds:
   - arch: amd64
     wrapper: null

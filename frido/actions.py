@@ -31,7 +31,7 @@ ACTIONS = {
         'git commit -m "Bump changelog."',
     ],
     'patch': [
-        # Dependencies: dversion and tagformat.
+        # Dependencies: dversion and tagformat and signing_key.
         'quilt push -a',
         'quilt pop -a',
         'rm -rf .pc',
@@ -39,8 +39,9 @@ ACTIONS = {
         'git add debian/changelog',
         'git commit -m "Release %(dversion)s"',
         # Generating a new auto tag might be needed while fixing things up,
-        # hence --retag to avoid failures if tags weren't deleted manually:
-        'gbp tag --retag --ignore-branch --debian-tag %(tagformat)s',
+        # hence --retag to avoid failures if tags weren't deleted manually;
+        # also signing tags to help other checkouts notice updated tags:
+        'gbp tag --retag --ignore-branch --debian-tag %(tagformat)s --sign-tags --keyid=%(signing_key)s',
     ],
     'push': [
         # Dependencies: remote, branch, and tag.

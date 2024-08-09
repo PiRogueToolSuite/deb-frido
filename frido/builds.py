@@ -88,6 +88,7 @@ class FridoBuild:
             run_actions('patch', {
                 'dversion': self.dversion,
                 'tagformat': self.fc.git.debian_auto_tag_format,
+                'signing_key': self.fc.git.signing_key,
             })
             return SUCCESS
         except BaseException:

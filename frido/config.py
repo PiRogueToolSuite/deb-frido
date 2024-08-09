@@ -25,6 +25,7 @@ class FridoConfigGit(BaseModel):
     debian_auto_branch: str
     debian_auto_tag_format: str
     debian_suffix: str
+    signing_key: str
 
     @validator('work_dir')
     def auto_expanduser(cls, path: Path):
