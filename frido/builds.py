@@ -50,6 +50,7 @@ class FridoBuild:
         # We distinguish between upstream and debian versions:
         self.uversion = version
         self.dversion = f'{version}{fc.git.debian_suffix}'
+        # Filenames only, don't forget to prepend '../' as needed:
         self.publish_queue: list[str] = []
         os.chdir(fc.git.work_dir)
 
