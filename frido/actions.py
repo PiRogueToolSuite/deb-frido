@@ -41,7 +41,7 @@ ACTIONS = {
         # Generating a new auto tag might be needed while fixing things up,
         # hence --retag to avoid failures if tags weren't deleted manually;
         # also signing tags to help other checkouts notice updated tags:
-        'gbp tag --retag --ignore-branch --debian-tag %(tagformat)s --sign-tags --keyid=%(signing_key)s',
+        'gbp tag --retag --debian-tag %(tagformat)s --sign-tags --keyid=%(signing_key)s',
     ],
     'push': [
         # Dependencies: remote, branch, and tag.
