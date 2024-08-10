@@ -336,6 +336,40 @@ class FridoBuild:
             return f'{FAILURE} {total_errors} lintian errors ({details})'
         return f'{SUCCESS} 0 lintian errors'
 
+    @stepmethod
+    def final_cleanup(self):
+        """
+        Clean files written to the parent directory, and other files that might
+        have been generated/published.
+
+        Start with .changes files (they list more files than we publish), then
+        move on to the publish queue (it lists some files already handled, plus
+        some others).
+
+        The former might remove artifacts from previous builds, the latter only
+        operates on files published during this very build.
+        """
+        try:
+            # We could iterate over all .changes files found in the parent
+            # directory, but let's restrict at least to the source package to
+            # avoid collateral damage:
+            source = subprocess.check_output(['dpkg-parsechangelog', '-SSource']).decode().rstrip()
+            for changes in Path('..').glob(f'{source}_*.changes'):
+                subprocess.check_call(['dcmd', 'rm', '-f', str(changes)])
+        except BaseException as exception:
+            print(exception)
+            return f'{FAILURE} .changes'
+
+        try:
+            # Some files were removed above:
+            for publish_file in sorted(self.publish_queue):
+                (Path('..') / publish_file).unlink(missing_ok=True)
+        except BaseException as exception:
+            print(exception)
+            return f'{FAILURE} publish queue'
+
+        return SUCCESS
+
     def run_steps(self) -> FridoStateResult:
         """
         Step dispatcher, iterating over (decorated) steps.
