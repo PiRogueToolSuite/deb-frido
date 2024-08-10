@@ -34,8 +34,6 @@ if __name__ == '__main__':
     options = parser.add_argument_group('fine-tuning options')
     options.add_argument('--only-one', action='store_true',
                          help='restrict building to a single version')
-    options.add_argument('--cheat', action='store_true',
-                         help='skip building, reuse existing build results instead')
     options.add_argument('--no-fetch', action='store_true',
                          help='skip "git fetch" when refreshing git data')
     options.add_argument('--no-notify', action='store_true',

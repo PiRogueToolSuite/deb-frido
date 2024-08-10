@@ -113,14 +113,6 @@ class FridoBuild:
                 if build.wrapper:
                     build_cmd = f'{build.wrapper} -- {build_cmd}'
 
-                # Make it possible to cheat: saving debian/files when
-                # building for real, and reusing it when cheating.
-                cheating_file = f'../cheat/frida_{self.dversion}_{build.arch}.files'
-                dpkg_genchanges_options = []
-                if self.fc.args.cheat:
-                    build_cmd = 'true'
-                    dpkg_genchanges_options = [f'-f{cheating_file}']
-
                 # Clean everything, not absolutely required for the first
                 # arch, but definitely preferable for all others. Note we're
                 # borrowing actions from the 'clean' step.
@@ -128,12 +120,9 @@ class FridoBuild:
 
                 # Run the build:
                 subprocess.check_output(shlex.split(build_cmd))
-                if not self.fc.args.cheat:
-                    shutil.copy('debian/files', cheating_file)
 
                 # Collect information for publication:
-                output_changes = subprocess.check_output(['dpkg-genchanges', '-b',
-                                                          *dpkg_genchanges_options],
+                output_changes = subprocess.check_output(['dpkg-genchanges', '-b'],
                                                          stderr=subprocess.DEVNULL)
                 changes = Deb822(output_changes.decode())
                 # Trick: to publish the build log, we pick the .buildinfo
