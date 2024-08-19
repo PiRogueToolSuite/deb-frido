@@ -13,6 +13,10 @@ goals:
  - integrate successfully built packages into a staging Debian repository;
  - notify PTS developers about the results, positive or negative.
 
+Since it's already set up to monitor, build `deb-frida`, and send notifications
+via Discord, it was extended a little to let us know about changes in Raspberry
+OS repositories, to help us improve Raspberry Pi 5 support.
+
 
 ## Architecture
 
