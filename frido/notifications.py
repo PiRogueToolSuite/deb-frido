@@ -237,6 +237,16 @@ def notify_refresh(fc: FridoConfig, notif: NotifRefresh, print_only: bool = Fals
         notify_send(fc, message, 'refreshing data')
 
 
+def url_to_filename(url):
+    """
+    Extract the filename part of the specified URL.
+
+    This seems to be required to make sure links are interpreted correctly by
+    Discord.
+    """
+    return re.sub(r'^.+/', '', url)
+
+
 def notify_monitoring(fc: FridoConfig, notif: NotifMonitoring, print_only: bool = False):
     """
     Sample notification:
@@ -268,12 +278,12 @@ def notify_monitoring(fc: FridoConfig, notif: NotifMonitoring, print_only: bool 
             lines.append(f'- Version: `{package.old_version}` → `{package.version}`')
         else:
             lines.append(f'- Version: `{package.version}`')
-        lines.append(f'- Download: [{package.url}]({package.url})')
+        lines.append(f'- Download: [{url_to_filename(package.url)}]({package.url})')
         if package.depends:
             lines.append('- Dependencies:')
             for dep, url in package.depends.items():
                 if url != '???':
-                    lines.append(f'   - {dep}: [{url}]({url})')
+                    lines.append(f'   - {dep}: [{url_to_filename(url)}]({url})')
                 else:
                     lines.append(f'   - {dep}')
         else:
