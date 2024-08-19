@@ -21,6 +21,36 @@ ppa:
   signing_key: '0xC72EE83EDF59D743EA0D4DD13494A52D59CD510A'
   publish_url: https://pirogue.apt.debamax.com/
   publish_wrapper: rsync -av . website:pirogue.apt.debamax.com
+monitoring:
+  repos:
+    - name: Debian
+      url: https://deb.debian.org/debian
+      architectures:
+        - arm64
+      components:
+        - non-free-firmware
+      suites:
+        - bookworm
+        - bookworm-proposed-updates
+      packages_index: Packages.xz
+      packages:
+        - raspi-firmware
+    - name: Raspberry OS
+      url: https://archive.raspberrypi.com/debian
+      architectures:
+        - arm64
+      components:
+        - main
+      suites:
+        - bookworm
+      packages_index: Packages.gz
+      packages:
+        # For each package we run debdiff and report changes in the Version and
+        # Depends fields, which means we'll get notified notified about the new,
+        # actual linux-image-* binary via the linux-image-* meta package.
+        - firmware-brcm80211
+        - linux-image-rpi-2712
+  work_dir: ~/monitoring
 discord:
   webhook_url_file: ~/.config/frido/discord_webhook_url
 reference:

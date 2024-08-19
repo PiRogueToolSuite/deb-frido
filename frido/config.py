@@ -49,6 +49,25 @@ class FridoConfigPpa(BaseModel):
         return path.expanduser()
 
 
+class FridaConfigMonitoringRepo(BaseModel):
+    name: str
+    url: str
+    architectures: list[str]
+    components: list[str]
+    suites: list[str]
+    packages_index: str
+    packages: list[str]
+
+
+class FridoConfigMonitoring(BaseModel):
+    work_dir: Path
+    repos: List[FridaConfigMonitoringRepo]
+
+    @validator('work_dir')
+    def auto_expanduser(cls, path: Path):
+        return path.expanduser()
+
+
 class FridoConfigDiscord(BaseModel):
     webhook_url_file: Path
 
@@ -66,6 +85,7 @@ class FridoConfig(BaseModel):
     git: FridoConfigGit
     builds: List[FridoConfigBuild]
     ppa: FridoConfigPpa
+    monitoring: FridoConfigMonitoring
     discord: FridoConfigDiscord
     reference: FridoConfigReference
     args: argparse.Namespace

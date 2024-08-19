@@ -39,6 +39,32 @@ class NotifRefresh:
         self.metadata.append(NotifRefreshMetadata(title, old, new))
 
 
+@dataclass
+class NotifMonitoringPackage:
+    """
+    Collect info about a given monitored package.
+    """
+    package: str
+    old_version: Optional[str]
+    version: str
+    url: str
+    # Let's go for a package to url mapping, to manage (new) dependencies:
+    depends: dict[str, str]
+
+
+@dataclass
+class NotifMonitoring:
+    """
+    Collect info about a given monitored repository.
+    """
+    repo: str
+    suite: str
+    component: str
+    architecture: str
+    # `field(…)` is used instead of `= []` to set a default value:
+    packages: list[NotifMonitoringPackage] = field(default_factory=list)
+
+
 def notify_send(fc: FridoConfig, message: str, topic: str):
     """
     Actually send the notification to Discord.
@@ -209,3 +235,54 @@ def notify_refresh(fc: FridoConfig, notif: NotifRefresh, print_only: bool = Fals
         print(message)
     else:
         notify_send(fc, message, 'refreshing data')
+
+
+def notify_monitoring(fc: FridoConfig, notif: NotifMonitoring, print_only: bool = False):
+    """
+    Sample notification:
+
+    **Package monitoring: updated firmware-brcm80211**
+    - Repository: Raspberry OS
+    - Suite: bookworm
+    - Component: main
+    - Architecture: arm64
+    - Package: `firmware-brcm80211`
+    - Version: `20230625-2+rpt2` → `1:20230625-2+rpt3`
+    - Download: [https://archive.raspberrypi.com/…](https://archive.raspberrypi.com/…)
+    - Dependencies: none
+    """
+    # NOTE: Sending one message per package, to make sure each of them can be
+    # spotted and managed separately.
+    for package in notif.packages:
+        lines = []
+        if package.old_version:
+            lines.append(f'**Package monitoring: updated {package.package}**')
+        else:
+            lines.append(f'**Package monitoring: new {package.package}**')
+        lines.append(f'- Repository: {notif.repo}')
+        lines.append(f'- Suite: {notif.suite}')
+        lines.append(f'- Component: {notif.component}')
+        lines.append(f'- Architecture: {notif.architecture}')
+        lines.append(f'- Package: `{package.package}`')
+        if package.old_version:
+            lines.append(f'- Version: `{package.old_version}` → `{package.version}`')
+        else:
+            lines.append(f'- Version: `{package.version}`')
+        lines.append(f'- Download: [{package.url}]({package.url})')
+        if package.depends:
+            lines.append('- Dependencies:')
+            for dep, url in package.depends.items():
+                if url != '???':
+                    lines.append(f'   - {dep}: [{url}]({url})')
+                else:
+                    lines.append(f'   - {dep}')
+        else:
+            lines.append('- Dependencies: none')
+
+        message = '\n'.join(lines).strip()
+        # Print or send:
+        if print_only:
+            logging.debug('not sending the following notification, as requested')
+            print(message)
+        else:
+            notify_send(fc, message, f'monitoring package: {package.package}')

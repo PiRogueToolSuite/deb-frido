@@ -10,7 +10,7 @@ from pathlib import Path
 import frido.config
 import frido.state
 from frido.builds import build_all
-from frido.refresh import refresh_all
+from frido.refresh import refresh_all, refresh_monitoring
 
 
 CONFIG_FILE = Path('config.yaml')
@@ -30,6 +30,8 @@ if __name__ == '__main__':
                          help='refresh reference files')
     actions.add_argument('--build', action='store_true',
                          help='build versions listed as todo')
+    actions.add_argument('--refresh-monitoring', action='store_true',
+                         help='refresh monitored packages')
 
     options = parser.add_argument_group('fine-tuning options')
     options.add_argument('--only-one', action='store_true',
@@ -51,8 +53,10 @@ if __name__ == '__main__':
     # it along all the time:
     FC.args = args
 
-    # Two actions are possible, each of them might send one notification:
+    # Three actions are possible, each of them might send one notification:
     if args.refresh_git or args.refresh_reference:
         refresh_all(FC, FS)
+    if args.refresh_monitoring:
+        refresh_monitoring(FC, FS)
     if args.build:
         build_all(FC, FS)

@@ -55,6 +55,7 @@ class FridoStateResult(BaseModel):
 
 class FridoState(BaseModel):
     git: FridoStateGit
+    monitoring: dict
     reference: FridoStateReference
     results: Dict[str, FridoStateResult]
     todo: List[str]
@@ -97,6 +98,7 @@ git:
     uversion: null
   upstream:
     tag: null
+monitoring: {}
 reference:
   dversion: null
   debs: {}

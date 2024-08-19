@@ -4,6 +4,8 @@ Refresh management.
 Two things need to be kept up-to-date:
  - the git repository, with both upstream and packaging remotes;
  - the reference files, i.e. frida *.deb referenced in the official PPA.
+
+Additionally, we monitor some packages in some repositories.
 """
 
 import hashlib
@@ -13,6 +15,7 @@ import re
 import sys
 from pathlib import Path
 from subprocess import PIPE, Popen, check_call, check_output
+from typing import List
 
 import requests
 
@@ -23,6 +26,7 @@ from packaging.version import Version as UVersion
 from .checks import check_git_consistency, check_overall_consistency
 from .config import FridoConfig
 from .notifications import NotifRefresh, notify_refresh
+from .notifications import NotifMonitoringPackage, NotifMonitoring, notify_monitoring
 from .state import FridoState, SUCCESS, FAILURE
 
 
@@ -170,7 +174,7 @@ def refresh_reference(fc: FridoConfig, fs: FridoState, notif: NotifRefresh):
 
 def refresh_all(fc: FridoConfig, fs: FridoState):
     """
-    Entry point for this module: refresh one or both data sources.
+    Initial entry point for this module: refresh one or both data sources.
     """
     notif = NotifRefresh()
     if fc.args.refresh_git:
@@ -187,3 +191,130 @@ def refresh_all(fc: FridoConfig, fs: FridoState):
         notif.append_metadata('Overall consistency', FAILURE, FAILURE)
 
     notify_refresh(fc, notif, print_only=fc.args.no_notify)
+
+
+def get_deb_depends(deb: Path) -> List[str]:
+    """
+    Extract Depends field from the specified Debian package.
+
+    Return a list of packages, without any version information.
+    """
+    depends = check_output(['dpkg-deb', '--showformat=${Depends}', '-W', deb]).decode()
+    if depends == '':
+        return []
+    return [re.sub(r' \(.+\)', '', x) for x in depends.split(', ')]
+
+
+def get_deb_version(deb: Path) -> str:
+    """
+    Extract Version field from the specified Debian package.
+    """
+    return check_output(['dpkg-deb', '--showformat=${Version}', '-W', deb]).decode()
+
+
+def get_packages_index(repo, this_dir, url):
+    reply = requests.get(url, timeout=30)
+    reply.raise_for_status()
+    (this_dir / repo.packages_index).write_bytes(reply.content)
+
+    if repo.packages_index == 'Packages.xz':
+        check_call(['unxz', '-f', this_dir / repo.packages_index])
+    elif repo.packages_index == 'Packages.gz':
+        check_call(['gunzip', '-f', this_dir / repo.packages_index])
+    else:
+        assert repo.packages_index == 'Packages'
+
+
+def refresh_monitoring_one(fc: FridoConfig, fs: FridoState, repo, suite, component, arch): \
+    # pylint: disable=too-many-arguments
+    """
+    Check the state of the monitored repositories: one specific Packages file.
+    """
+    # Avoid weird characters in paths and in the state file:
+    repo_name = repo.name.replace(' ', '-').lower()
+    this_dir = fc.monitoring.work_dir / repo_name / suite / component / arch
+    this_dir.mkdir(parents=True, exist_ok=True)
+
+    # Download the right Packages* file and make it available as an uncompressed
+    # Packages which is easier to manage than compressed versions:
+    get_packages_index(
+        repo,
+        this_dir,
+        f'{repo.url}/dists/{suite}/{component}/binary-{arch}/{repo.packages_index}',
+    )
+
+    package_to_filename = {}
+    notif = NotifMonitoring(repo.name, suite, component, arch)
+    for stanza in Deb822.iter_paragraphs((this_dir / 'Packages').read_text()):
+        # Build a map so that we can process dependencies:
+        package_to_filename[ stanza['Package'] ] = stanza['Filename']
+        if stanza['Package'] not in repo.packages:
+            continue
+
+        # Shorten names for things we'll use several times:
+        package = stanza['Package']
+        filename = stanza['Filename']
+
+        # Re-read data from the actual package if there's one:
+        orig_deb = fs.monitoring.get(repo_name, {}) \
+                                .get(suite, {}) \
+                                .get(component, {}) \
+                                .get(arch, {}) \
+                                .get(package, None)
+
+        this_deb = this_dir / Path(filename).name
+
+        # Skip package if we already know about it:
+        if orig_deb and orig_deb == Path(filename).name:
+            continue
+
+        # Must download if we don't have the file locally:
+        this_url = f'{repo.url}/{filename}'
+        download_deb(this_url, this_deb, stanza['Size'], stanza['SHA256'])
+
+        # Focus on all dependencies all the time, to make sure
+        # we don't miss anything:
+        notif.packages.append(NotifMonitoringPackage(
+            package,
+            get_deb_version(this_dir / orig_deb) if orig_deb else None,
+            stanza['Version'],
+            this_url,
+            # URL resolution happens after this loop:
+            {x: "???" for x in get_deb_depends(this_deb)}
+        ))
+
+        # Store a pointer to the new package.
+        # FIXME: The dict construction is awful!
+        if repo_name not in fs.monitoring:
+            fs.monitoring[repo_name] = {}
+        if suite not in fs.monitoring[repo_name]:
+            fs.monitoring[repo_name][suite] = {}
+        if component not in fs.monitoring[repo_name][suite]:
+            fs.monitoring[repo_name][suite][component] = {}
+        if arch not in fs.monitoring[repo_name][suite][component]:
+            fs.monitoring[repo_name][suite][component][arch] = {}
+        fs.monitoring[repo_name][suite][component][arch][package] = \
+            Path(this_deb).name
+        # FIXME: We're writing and sync-ing before sending the
+        # notification!
+        fs.sync()
+
+    for package in notif.packages:
+        for dep in package.depends:
+            if dep in package_to_filename:
+                package.depends[dep] = f'{repo.url}/{package_to_filename[dep]}'
+
+    # Send, possibly empty if all packages were known already
+    # and skipped:
+    notify_monitoring(fc, notif, print_only=fc.args.no_notify)
+
+
+def refresh_monitoring(fc: FridoConfig, fs: FridoState):
+    """
+    Check the state of the monitored repositories.
+    """
+    for repo in fc.monitoring.repos:
+        for suite in repo.suites:
+            for component in repo.components:
+                for arch in repo.architectures:
+                    refresh_monitoring_one(fc, fs, repo, suite, component, arch)
