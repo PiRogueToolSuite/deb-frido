@@ -58,3 +58,8 @@ build-dependencies listed in `debian/control`:
 The following packages are extra dependencies, to handle `arm64` crossbuilds:
 
     sudo apt-get install -y debootstrap schroot qemu-system-arm qemu-user-static
+
+
+## How to publish a new release
+
+See separate [RELEASE.md](RELEASE.md) documentation.
