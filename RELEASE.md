@@ -92,3 +92,7 @@ for `bookworm`.
    deletions. The recommended configuration is `rsync`, without any
    `--delete*`, so a first step can be using `--delete --dry-run`. If that
    looks good, drop `--dry-run`.
+
+The `Packages*` and `Release*` files are still going to need a refresh to stop
+referencing those long-obsolete packages, but that can wait until the next
+successful build.
