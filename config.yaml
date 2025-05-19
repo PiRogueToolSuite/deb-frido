@@ -20,7 +20,7 @@ ppa:
   suite: frida-bookworm
   signing_key: '0xC72EE83EDF59D743EA0D4DD13494A52D59CD510A'
   publish_url: https://pirogue.apt.debamax.com/
-  publish_wrapper: rsync -av . website:pirogue.apt.debamax.com
+  publish_wrapper: rsync -av frida-bookworm website:pirogue.apt.debamax.com
 monitoring:
   repos:
     - name: Debian
