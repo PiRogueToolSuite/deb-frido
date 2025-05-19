@@ -73,3 +73,22 @@ packaging branch to the appropriate commit, and cheat by editing the
 `state.yaml` file, pretending those builds didn't happen. They'll get a do-over,
 which can be confirmed with the ❗ emoji next to the files having been
 overwritten.
+
+
+## Bonus: clean up old releases (once in a blue moon)
+
+As discussed in `debian-12`'s [PR#12](https://github.com/PiRogueToolSuite/debian-12/pull/22),
+it seems to make sense to only keep builds for two upstream series in the
+repository. Implementing some automated cleanup might take time and might be
+risky, so here are the few manual steps required to perform that cleanup.
+
+Example: 16.7.\* and 17.0.\* are current, 16.6.\* goes away, all of this built
+for `bookworm`.
+
+ - On the machine performing builds, enter the directory configured via
+   `ppa.work_dir`.
+ - Remove the old series, e.g. `rm frida-bookworm/frida_16.6.*`
+ - Run the sync command configured via `ppa.publish_wrapper`, enabling
+   deletions. The recommended configuration is `rsync`, without any
+   `--delete*`, so a first step can be using `--delete --dry-run`. If that
+   looks good, drop `--dry-run`.
