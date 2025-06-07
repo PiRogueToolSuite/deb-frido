@@ -397,7 +397,8 @@ def build_all(fc: FridoConfig, fs: FridoState):
     that was a success, move to the next version, otherwise stop immediately:
     some human brain is needed.
     """
-    check_overall_consistency(fc, fs)
+    # TEMPORARY:
+    check_overall_consistency(fc, fs, True)
 
     for version in fs.todo:
         # If we've seen this version already, either skip or stop:

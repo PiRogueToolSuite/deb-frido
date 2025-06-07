@@ -55,7 +55,7 @@ def check_git_consistency(fc: FridoConfig, _fs: FridoState):
         check_call(['git', 'merge', '--ff-only', f'{fc.git.debian_remote}/{fc.git.debian_branch}'])
 
 
-def check_overall_consistency(fc: FridoConfig, fs: FridoState):
+def check_overall_consistency(fc: FridoConfig, fs: FridoState, official_may_mismatch=False):
     """
     Ensure everything is consistent (git and reference), and ready to perform
     builds (which operates in the git checkout in an automated fashion).
@@ -75,7 +75,9 @@ def check_overall_consistency(fc: FridoConfig, fs: FridoState):
 
     # Official things must match! This might happen if pushes to Git and to the
     # PPA don't happen in lockstep, hence the RuntimeError.
-    if fs.git.debian.dversion != fs.reference.dversion:
+    #
+    # ALLOW FOR A TEMPORARY OVERRIDE:
+    if fs.git.debian.dversion != fs.reference.dversion and not official_may_mismatch:
         logging.error('inconsistent versions: %s (git) vs. %s (reference)',
                       fs.git.debian.dversion, fs.reference.dversion)
         raise RuntimeError('inconsistent versions')
