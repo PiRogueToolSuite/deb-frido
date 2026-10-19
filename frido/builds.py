@@ -337,6 +337,10 @@ class FridoBuild:
 
         The former might remove artifacts from previous builds, the latter only
         operates on files published during this very build.
+
+        Additionally, we run clean again. While this is a no-op if another build
+        is queued up, it avoids hogging disk space until the next build, and
+        also lowers the chances of having build-related files clog backup space.
         """
         try:
             # We could iterate over all .changes files found in the parent
@@ -356,6 +360,12 @@ class FridoBuild:
         except BaseException as exception:
             print(exception)
             return f'{FAILURE} publish queue'
+
+        try:
+            run_actions('clean', {})
+            return SUCCESS
+        except BaseException:
+            return FAILURE
 
         return SUCCESS
 
