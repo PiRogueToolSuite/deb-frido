@@ -42,9 +42,8 @@ def check_git_consistency(fc: FridoConfig, _fs: FridoState):
                               fc.git.debian_branch],
                              check=False).returncode == 0
     if not local_is_ancestor and not remote_is_ancestor:
-        logging.error('local and remote %s branches have diverged, must be fixed manually',
-                      fc.git.debian_remote)
-        sys.exit(1)
+        logging.warning('local and remote %s branches have diverged, ignoring for now',
+                        fc.git.debian_remote)
     elif local_is_ancestor and remote_is_ancestor:
         logging.debug('local and remote %s branches are equal, no-op', fc.git.debian_remote)
     elif remote_is_ancestor:
