@@ -30,8 +30,8 @@ monitoring:
       components:
         - non-free-firmware
       suites:
-        - bookworm
-        - bookworm-proposed-updates
+        - trixie
+        - trixie-proposed-updates
       packages_index: Packages.xz
       packages:
         - raspi-firmware
