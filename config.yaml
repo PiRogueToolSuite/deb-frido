@@ -35,21 +35,6 @@ monitoring:
       packages_index: Packages.xz
       packages:
         - raspi-firmware
-    - name: Raspberry OS
-      url: https://archive.raspberrypi.com/debian
-      architectures:
-        - arm64
-      components:
-        - main
-      suites:
-        - bookworm
-      packages_index: Packages.gz
-      packages:
-        # For each package we run debdiff and report changes in the Version and
-        # Depends fields, which means we'll get notified notified about the new,
-        # actual linux-image-* binary via the linux-image-* meta package.
-        - firmware-brcm80211
-        - linux-image-rpi-2712
   work_dir: ~/monitoring
 discord:
   webhook_url_file: ~/.config/frido/discord_webhook_url
